@@ -817,6 +817,7 @@ DWORD WINAPI run(void*) {
                 values.automaticResponse,values.automaticHandStrength,values.automaticFalloff,values.automaticHandThreshold,values.automaticAirBrake};
         };
         values.spectatorFov = spectator::getFov();
+        values.spectatorFovEnabled = spectator::getEnabled();
         values.nearClipMm = spectator::getNearClipMm();
         values = vr_settings::sanitized(values);
         game_menu::publish(values);
@@ -1576,9 +1577,11 @@ DWORD WINAPI run(void*) {
                     (void)promptHelp;
                     // A change in the SPIDY VR tab takes effect at once.
                     const int previousSpectatorFov = values.spectatorFov;
+                    const bool previousFovEnabled = values.spectatorFovEnabled;
                     const int previousNearClipMm = values.nearClipMm;
                     const auto previousAutomatic = automaticSettings();
                     if (game_menu::take(values)) {
+                        if (values.spectatorFovEnabled != previousFovEnabled) spectator::setEnabled(values.spectatorFovEnabled);
                         if (values.spectatorFov != previousSpectatorFov) spectator::setFov(values.spectatorFov);
                         if (values.nearClipMm != previousNearClipMm) spectator::setNearClipMm(values.nearClipMm);
                         if (!(previousAutomatic == automaticSettings())) spectator::saveAutomaticSettings(automaticSettings());
@@ -1586,6 +1589,7 @@ DWORD WINAPI run(void*) {
                         applySettings();
                     }
                     values.spectatorFov = spectator::getFov();
+                    values.spectatorFovEnabled = spectator::getEnabled();
                     values.nearClipMm = spectator::getNearClipMm();
                     game_menu::publish(values);
                     const uint32_t gate =

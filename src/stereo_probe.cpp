@@ -66,6 +66,19 @@ int spidy::spectator::getFov() {
     readSpectatorSettings();
     return spectatorFov.load();
 }
+bool spidy::spectator::getEnabled() {
+    readSpectatorSettings();
+    return spectatorEnabled.load();
+}
+void spidy::spectator::setEnabled(bool value) {
+    AcquireSRWLockExclusive(&spectatorSettingsLock);
+    spectatorEnabled = value;
+    const auto path = spectatorSettingsPath();
+    if (!path.empty())
+        WritePrivateProfileStringW(L"Spectator",L"Enabled",value ? L"1" : L"0",path.c_str());
+    spectatorPoll = GetTickCount64();
+    ReleaseSRWLockExclusive(&spectatorSettingsLock);
+}
 void spidy::spectator::setFov(int degrees) {
     AcquireSRWLockExclusive(&spectatorSettingsLock);
     spectatorFov = std::clamp(degrees,40,150);

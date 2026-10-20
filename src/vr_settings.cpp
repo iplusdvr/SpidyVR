@@ -128,6 +128,7 @@ float numberOf(Item item, const Values& v) {
 // A switch setting's value (const for const values), or null for a list.
 template <class V> auto switchOf(Item item, V& v) -> decltype(&v.aimMarkers) {
     switch (item) {
+    case Item::spectatorFovEnabled: return &v.spectatorFovEnabled;
     case Item::automaticAirBrake: return &v.automaticAirBrake;
     case Item::realisticFlips: return &v.realisticFlips;
     case Item::automaticReleaseFlip: return &v.automaticReleaseFlip;
@@ -174,9 +175,11 @@ Values sanitized(Values v) {
     v.screenDepth = std::clamp(v.screenDepth, 0, 3);
     return v;
 }
-const std::array<Row, 34>& rows() {
+const std::array<Row, 35>& rows() {
     // The help fits the game's description column beside the rows.
-    static const std::array<Row, 34> all{{
+    static const std::array<Row, 35> all{{
+        {Item::spectatorFovEnabled, "FOV SLIDER",
+         "Enable custom spectator FOV. Off restores the standard recording view.", {}},
         {Item::spectatorFov, "SPECTATOR FOV",
          "Horizontal field of view of the recording window. Does not change headset FOV.", spectatorChoices},
         {Item::nearClip, "NEAR CLIP",
@@ -243,6 +246,8 @@ int choice(Item item, const Values& v) {
     return best;
 }
 bool choose(Item item, int index, Values& v) {
+    if (item == Item::spectatorFov && !v.spectatorFovEnabled)
+        return false;
     if (bool* on = switchOf(item, v)) {
         if (index != 0 && index != 1)
             return false;

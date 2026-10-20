@@ -68,6 +68,7 @@ struct Values {
     // round whatever comes between you and where they stick.
     bool arcadeWebs = false;
     int spectatorFov = 110;
+    bool spectatorFovEnabled = true;
     // VR camera near clipping plane in millimetres. A short plane keeps the
     // chest and near side of the arms visible when they approach the eyes.
     int nearClipMm = 20;
@@ -146,8 +147,9 @@ enum class Item : uint8_t {
     automaticFalloff,
     automaticHandThreshold,
     automaticAirBrake,
+    spectatorFovEnabled,
 };
-inline constexpr Item lastItem = Item::automaticAirBrake;
+inline constexpr Item lastItem = Item::spectatorFovEnabled;
 // The SPIDY VR tab, top to bottom: a section's heading (item none) or a
 // setting. The sections: WEBS, SWINGING, COMFORT, DISPLAY, BODY and
 // EXPERIMENTAL (the player, October 19: "sort the options in spidy vr
@@ -164,7 +166,7 @@ struct Row {
     // menu (the one with resume)").
     bool page{};
 };
-const std::array<Row, 34>& rows();
+const std::array<Row, 35>& rows();
 // The choice a setting shows for these values: a switch 0 (off) or 1 (on), a
 // list its step nearest to the value (a launcher value between two steps
 // shows the nearer one, the lower on a tie).

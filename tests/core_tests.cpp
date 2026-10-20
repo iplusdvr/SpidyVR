@@ -9706,8 +9706,11 @@ int main() {
     });
     test("VR settings tab: six sections, every setting once, a list's choices one per step", [] {
         using namespace vr_settings;
-        const auto& all = rows();
-        unsigned seen = 0, headings = 0;
+        check(rows()[0].item == Item::spectatorFovEnabled && rows()[0].choices.empty(),
+              "FOV toggle appears above its amount");
+        std::array<Row, 34> all;
+        std::copy(rows().begin() + 1, rows().end(), all.begin());
+        unsigned seen = 1u << static_cast<unsigned>(Item::spectatorFovEnabled), headings = 0;
         for (const auto& row : all) {
             check(row.title && *row.title, "a row without a title");
             for (const char* c = row.title; *c; ++c)
@@ -9808,8 +9811,14 @@ int main() {
               "FOV rejects out of range choices");
         v.spectatorFov=-1; check(sanitized(v).spectatorFov==40,"FOV lower bound");
         v.spectatorFov=1000; check(sanitized(v).spectatorFov==150,"FOV upper bound");
-        check(rows()[0].item == Item::spectatorFov && rows()[0].choices.size()==23,
+        check(rows()[1].item == Item::spectatorFov && rows()[1].choices.size()==23,
               "recording FOV appears first");
+        const int savedFov = v.spectatorFov;
+        check(choose(Item::spectatorFovEnabled, 0, v), "FOV can be disabled");
+        check(!choose(Item::spectatorFov, 0, v) && v.spectatorFov == savedFov,
+              "disabled slider preserves the selected FOV");
+        check(choose(Item::spectatorFovEnabled, 1, v) && choose(Item::spectatorFov, 0, v),
+              "enabling FOV unlocks its amount");
     });
     test("near clip menu keeps geometry close to the headset", [] {
         using namespace vr_settings;
@@ -9829,7 +9838,7 @@ int main() {
         check(sanitized(v).nearClipMm == 10, "near clip lower bound");
         v.nearClipMm = 1000;
         check(sanitized(v).nearClipMm == 100, "near clip upper bound");
-        check(rows()[1].item == Item::nearClip && rows()[1].choices.size() == std::size(expected),
+        check(rows()[2].item == Item::nearClip && rows()[2].choices.size() == std::size(expected),
               "near clip appears below spectator FOV");
     });
     test("VR settings choices: switches and lists round-trip, launcher values show the nearest step", [] {

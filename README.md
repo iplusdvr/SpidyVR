@@ -6,7 +6,7 @@ This fork adds three VR comfort and movement features to [SpidyVR](https://githu
 
 1. **FOV Slider**
 
-   Sets the desktop and recording view to a horizontal FOV between 40° and 150°. It does not change the headset's view.
+   Turn **FOV SLIDER** on, then use **SPECTATOR FOV** directly below it to set the desktop and recording view between 40° and 150°. Turn it off to restore the standard recording view. Your chosen amount is saved, and the headset's view is unchanged.
 
 2. **Near Clip Fix**
 

@@ -602,6 +602,9 @@ bool matches(uintptr_t at, const unsigned char* bytes, size_t count) {
     }
 }
 vr_settings::Values copyItems(const vr_settings::Values& from, vr_settings::Values to, uint32_t which) {
+    // Apply the gate before its amount when both rows changed before the worker polled.
+    if (which & (1u << static_cast<unsigned>(Item::spectatorFovEnabled)))
+        to.spectatorFovEnabled = from.spectatorFovEnabled;
     for (unsigned i = 1; i <= static_cast<unsigned>(vr_settings::lastItem); ++i)
         if (which & (1u << i))
             vr_settings::choose(static_cast<Item>(i), vr_settings::choice(static_cast<Item>(i), from), to);
