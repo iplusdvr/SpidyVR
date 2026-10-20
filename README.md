@@ -1,4 +1,4 @@
-# iplusd VR — a SpidyVR fork
+# iplusd VR - a SpidyVR fork
 
 This fork adds three VR comfort and movement features to [SpidyVR](https://github.com/IlyaMez/SpidyVR), the Marvel's Spider-Man Remastered VR mod by Ilya Mezerowsky.
 
