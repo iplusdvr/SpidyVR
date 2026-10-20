@@ -1,48 +1,55 @@
-# iplusd VR — SpidyVR fork
+# iplusd VR — a SpidyVR fork
 
-**A complete Windows package by [iplusd](https://github.com/iplusdvr), based on [SpidyVR](https://github.com/IlyaMez/SpidyVR) by Ilya Mezerowsky.**
+This fork adds three VR comfort and movement features to [SpidyVR](https://github.com/IlyaMez/SpidyVR), the Marvel's Spider-Man Remastered VR mod by Ilya Mezerowsky.
 
-## iplusd's additions
+## What's added
 
-1. **iplusd's SpidyVR FOV Slider** — independent 40–150° horizontal desktop/recording FOV, persisted between sessions. Headset optics keep their own projection.
-2. **iplusd's SpidyVR Near Clip Fix** — adjustable 1–10 cm VR clipping distance so the chest and nearby arms stay visible.
-3. **iplusd's SpidyVR Realistic Swinging** — web motion and arm gestures drive continuous momentum rotation, including full turns, manual left-stick steering and an airborne A-button brake that smoothly returns upright.
+1. **iplusd's SpidyVR FOV Slider**
 
-[Download the player package](https://github.com/iplusdvr/SpidyVR/releases/latest) · [Report a fork issue](https://github.com/iplusdvr/SpidyVR/issues) · [Custom changes](docs/CUSTOM_CHANGES.md)
+   Sets the desktop and recording view to a horizontal FOV between 40° and 150°. It does not change the headset's lens projection, and the selected value is saved between sessions.
 
-## Install
+2. **iplusd's SpidyVR Near Clip Fix**
 
-1. Download **iplusd-VR-<version>-win64.zip** from this fork's Releases. GitHub's source archives are for developers.
-2. Extract the complete ZIP into a writable folder. No separate SpidyVR download or patch is needed.
-3. Open **iplusd VR.cmd** (or **Spidy Launcher.exe**), connect the headset, close the game and choose **START VR**.
-4. During gameplay, open **Settings → SPIDY VR**, the first settings category. The category is available in the pause menu while the mod is active.
+   Sets the VR near clipping distance between 1 cm and 10 cm, preventing Spider-Man's chest and nearby parts of his arms from disappearing when they get close to the camera.
 
-Requires your own supported copy of Marvel's Spider-Man Remastered, a PC VR headset and an OpenXR runtime. Keep the game window in front; the game may pause when another window has focus. See the [SpidyVR players' guide](docs/PLAYERS.md) for base controls and troubleshooting.
+3. **iplusd's SpidyVR Realistic Swinging**
+
+   Adds momentum-based air rotation driven by web movement and physical arm gestures. It supports continuous rotations beyond 360°, left-stick steering, adjustable strength and drag, and an optional airborne A-button brake that smoothly returns you upright.
+
+These controls appear first in the game's **Settings → SPIDY VR** menu, and the SPIDY VR category appears at the top of Settings.
+
+## Using the fork
+
+Download the complete player ZIP from [Releases](https://github.com/iplusdvr/SpidyVR/releases) when a build is available. GitHub's automatic source-code archives are intended for developers and do not contain a ready-to-run player package.
+
+1. Extract the ZIP to a folder you can write to.
+2. Start **Spidy Launcher.exe** or **Launch Spidy VR.cmd**.
+3. Connect your headset, close the game if it is already running, and select **START VR**.
+4. In the game, open **Settings → SPIDY VR** to adjust the new options. Changes take effect immediately.
+
+This is a complete fork, so a separate SpidyVR installation is not required. Installing an original SpidyVR package over the same folder will replace the fork's changes.
 
 ## Realistic Swinging controls
 
-- **Tuning:** rotation strength, speed cap, flight threshold, swing momentum, response, hand momentum, drag and minimum hand speed.
-- **Air rotation brake:** when enabled, an airborne A press clears angular momentum and smoothly returns upright while retaining heading. Ground jumps retain their original behavior.
-- **Manual steering:** the original FLIPS option enables left-stick airborne rotation and can be combined with the custom system.
-- **First settings category:** the added FOV, near clip and rotation controls appear first in SPIDY VR; SPIDY VR is the first category in Settings.
+- **REALISTIC FLIPS** enables momentum-based air rotation.
+- Arm movement and web-swing momentum determine the direction and speed of rotation; there is no fixed flip animation or preset turn count.
+- The original **FLIPS** option keeps manual left-stick air rotation available alongside the momentum system.
+- With **AIR BRAKE** enabled, pressing A in the air clears rotational momentum and smoothly restores the normal upright view without changing your heading.
+- Strength, speed limit, response, hand influence, drag and activation thresholds can be adjusted in the same menu.
 
-Custom momentum rotation defaults OFF; enable REALISTIC FLIPS to use it. SpidyVR provides the renderer, tracked body, controls and underlying web movement solver.
+Realistic Swinging is disabled by default so existing controls continue to behave as expected until it is enabled.
 
-## Credits and license
+## Credits
 
-- **VR foundation:** SpidyVR by **Ilya Mezerowsky** and contributors.
-- **Fork and custom features:** **iplusd** ([iplusdvr](https://github.com/iplusdvr)).
-- **Inspiration:** **Blaze's Spider-Man mod for Blade & Sorcery**, particularly gesture-driven momentum rotation. No Blaze DLLs, extracted source or assets are distributed.
+- **Original VR mod and foundation:** [SpidyVR](https://github.com/IlyaMez/SpidyVR) by Ilya Mezerowsky and its contributors.
+- **Fork and the three features above:** [iplusd](https://github.com/iplusdvr).
+- **Movement inspiration:** Blaze's Spider-Man mod for Blade & Sorcery. No source code, binaries or assets from that mod are included.
 
-This modified distribution retains SpidyVR's [GPL v3 license](LICENSE), copyright notices and [third-party notices](THIRD_PARTY_NOTICES.md). This is an unofficial fork; the upstream author is not responsible for its modifications. Not affiliated with Marvel, Sony or Insomniac.
+This project remains licensed under [GPL-3.0](LICENSE) and retains SpidyVR's copyright and [third-party notices](THIRD_PARTY_NOTICES.md). It is an unofficial fork; the upstream author is not responsible for these changes. The project is not affiliated with Marvel, Sony Interactive Entertainment or Insomniac Games.
 
-## Updates and development
+## Building from source
 
-The launcher uses **iplusdvr/SpidyVR** releases. New upstream changes must be merged, tested and released here. Installing an original SpidyVR release over this package would replace the custom features.
-
-Base: SpidyVR v0.4.0, commit `c747c184dd97acaddf0db47f1a32f30cebe0d974`. Version numbers identify this fork's releases.
-
-With Visual Studio 2022 C++ Build Tools and Windows SDK:
+The project requires Visual Studio 2022 C++ Build Tools and a Windows SDK.
 
 ```powershell
 ./tools/bootstrap.ps1 -Observer
@@ -50,6 +57,10 @@ With Visual Studio 2022 C++ Build Tools and Windows SDK:
 ./tools/package.ps1
 ```
 
-Packaging creates the complete player ZIP. **Actions → Release** builds and packages releases on GitHub. Build checks do not replace a game/headset test before release. The [original README](docs/UPSTREAM_README.md) is retained as historical upstream documentation.
+The build keeps the three additions together on this fork's `main` branch. Each feature also has its own clean branch and upstream pull request:
 
-Türkçe: Tam paketi Releases bölümünden indirip çıkarın, **iplusd VR.cmd** dosyasını açın. Ayrıca SpidyVR kurmanız gerekmez. Oyun içinde **Ayarlar → SPIDY VR** ilk sıradadır. FOV, momentumlu takla ve havada A ile normale dönme seçenekleri bu menüdedir.
+- [FOV Slider pull request](https://github.com/IlyaMez/SpidyVR/pull/21)
+- [Near Clip Fix pull request](https://github.com/IlyaMez/SpidyVR/pull/22)
+- [Realistic Swinging pull request](https://github.com/IlyaMez/SpidyVR/pull/23)
+
+More implementation details are available in [Custom changes](docs/CUSTOM_CHANGES.md). The [original SpidyVR README](docs/UPSTREAM_README.md) is preserved for the base mod's controls, requirements and troubleshooting.
