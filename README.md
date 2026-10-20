@@ -4,9 +4,9 @@ This fork adds three VR comfort and movement features to [SpidyVR](https://githu
 
 ## What's added
 
-1. **SpidyVR FOV Slider**
+1. **FOV Slider**
 
-   Sets the desktop and recording view to a horizontal FOV between 40° and 150°. It does not change the headset's lens projection, and the selected value is saved between sessions.
+   Sets the desktop and recording view to a horizontal FOV between 40° and 150°. It does not change the headset's view.
 
 2. **Near Clip Fix**
 
@@ -16,19 +16,19 @@ This fork adds three VR comfort and movement features to [SpidyVR](https://githu
 
    Adds momentum-based air rotation driven by web movement and physical arm gestures. It supports continuous rotations beyond 360°, left-stick steering, adjustable strength and drag, and an optional airborne A-button brake that smoothly returns you upright.
 
-These controls appear first in the game's **Settings → SPIDY VR** menu, and the SPIDY VR category appears at the top of Settings.
+These controls appear in the game's **Settings → SPIDY VR** menu.
 
 ## HOW TO USE
 
-Download the complete player ZIP from [Releases](https://github.com/iplusdvr/SpidyVR/releases) when a build is available. GitHub's automatic source-code archives are intended for developers and do not contain a ready-to-run player package.
+1. Download the latest [release](https://github.com/iplusdvr/SpidyVR/releases)
+2. Extract the ZIP to a folder
+3. Start **Spidy Launcher.exe**
+4. Connect your headset, close the game if it is already running, and select **START VR**
+5. In the game, open **Settings → SPIDY VR** to adjust the new options
+6. Realistic Swinging is disabled by default so make sure the **Realistic Flips: ON** to use the new swinging system
 
-1. Extract the ZIP to a folder you can write to.
-2. Start **Spidy Launcher.exe** or **Launch Spidy VR.cmd**.
-3. Connect your headset, close the game if it is already running, and select **START VR**.
-4. In the game, open **Settings → SPIDY VR** to adjust the new options.
-5. Make sure the **Realistic Flips: ON** to use the new swinging system.
-
-This is a complete fork, so a separate SpidyVR installation is not required. Installing an original SpidyVR package over the same folder will replace the fork's changes.
+This is a complete fork, so a separate SpidyVR installation is not required. 
+Installing an original SpidyVR package over the same folder will replace the fork's changes.
 
 ## Realistic Swinging controls
 
