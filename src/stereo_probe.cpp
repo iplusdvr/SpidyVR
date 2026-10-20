@@ -9,14 +9,129 @@
 #include "spidy/native_hud.hpp"
 #include "spidy/native_view.hpp"
 #include "spidy/native_webs.hpp"
+#include "spidy/spectator.hpp"
 #include <MinHook.h>
 #include <atomic>
 #include <cstdint>
 #include <initializer_list>
+#include <string>
 #include <intrin.h>
 #include <windows.h>
 using namespace spidy;
 using native_view::Descriptor;
+HINSTANCE spectatorModule{};
+std::atomic<bool> spectatorEnabled{true};
+std::atomic<int> spectatorFov{110};
+std::atomic<int> nearClipMm{20};
+float immersiveNearZ() {
+    return static_cast<float>(nearClipMm.load(std::memory_order_relaxed)) / 1000.f;
+}
+SRWLOCK spectatorSettingsLock = SRWLOCK_INIT;
+uint64_t spectatorPoll{};
+std::wstring spectatorSettingsPath() {
+    wchar_t path[32768]{};
+    if (!GetModuleFileNameW(spectatorModule,path,32768)) return {};
+    std::wstring directory = path;
+    auto slash = directory.find_last_of(L"\\/");
+    if (slash == std::wstring::npos) return {};
+    directory.resize(slash);
+    const auto fallback = directory + L"\\SpidySpectator.ini";
+    for (int level=0; level<6 && !directory.empty(); ++level) {
+        const auto candidate = directory + L"\\build\\windows-ninja\\SpidySpectator.ini";
+        const auto attributes = GetFileAttributesW(candidate.c_str());
+        if (attributes != INVALID_FILE_ATTRIBUTES && !(attributes & FILE_ATTRIBUTE_DIRECTORY)) return candidate;
+        slash = directory.find_last_of(L"\\/");
+        if (slash == std::wstring::npos) break;
+        directory.resize(slash);
+    }
+    return fallback;
+}
+void readSpectatorSettings() {
+    AcquireSRWLockExclusive(&spectatorSettingsLock);
+    const auto now = GetTickCount64();
+    if (!spectatorPoll || now-spectatorPoll >= 500) {
+        spectatorPoll = now;
+        const auto path = spectatorSettingsPath();
+        if (!path.empty()) {
+            spectatorEnabled = GetPrivateProfileIntW(L"Spectator",L"Enabled",1,path.c_str()) == 1;
+            spectatorFov = std::clamp(static_cast<int>(GetPrivateProfileIntW(
+                L"Spectator",L"HorizontalFov",110,path.c_str())),40,150);
+            nearClipMm = std::clamp(static_cast<int>(GetPrivateProfileIntW(
+                L"Spectator",L"NearClipMm",20,path.c_str())),10,100);
+        }
+    }
+    ReleaseSRWLockExclusive(&spectatorSettingsLock);
+}
+int spidy::spectator::getFov() {
+    readSpectatorSettings();
+    return spectatorFov.load();
+}
+void spidy::spectator::setFov(int degrees) {
+    AcquireSRWLockExclusive(&spectatorSettingsLock);
+    spectatorFov = std::clamp(degrees,40,150);
+    const auto path = spectatorSettingsPath();
+    if (!path.empty()) {
+        const auto text = std::to_wstring(spectatorFov.load());
+        WritePrivateProfileStringW(L"Spectator",L"HorizontalFov",text.c_str(),path.c_str());
+    }
+    spectatorPoll = GetTickCount64();
+    ReleaseSRWLockExclusive(&spectatorSettingsLock);
+}
+int spidy::spectator::getNearClipMm() {
+    readSpectatorSettings();
+    return nearClipMm.load();
+}
+void spidy::spectator::setNearClipMm(int millimetres) {
+    AcquireSRWLockExclusive(&spectatorSettingsLock);
+    nearClipMm = std::clamp(millimetres,10,100);
+    const auto path = spectatorSettingsPath();
+    if (!path.empty()) {
+        const auto text = std::to_wstring(nearClipMm.load());
+        WritePrivateProfileStringW(L"Spectator",L"NearClipMm",text.c_str(),path.c_str());
+    }
+    spectatorPoll = GetTickCount64();
+    ReleaseSRWLockExclusive(&spectatorSettingsLock);
+}
+RealisticFlipSettings spidy::spectator::automaticSettings() {
+    AcquireSRWLockExclusive(&spectatorSettingsLock);
+    const auto path=spectatorSettingsPath();
+    auto get=[&](const wchar_t* key,int fallback) {
+        return static_cast<int>(GetPrivateProfileIntW(L"AutomaticRotation",key,fallback,path.c_str()));
+    };
+    RealisticFlipSettings s;
+    s.enabled=get(L"Enabled",0)==1;
+    s.releaseFlip=get(L"ReleaseFlip",1)==1;
+    s.strength=std::clamp(get(L"Strength",50),25,100);
+    s.speed=std::clamp(get(L"Speed",240),90,360);
+    s.minimumSpeed=std::clamp(get(L"MinimumSpeed",3),3,16);
+    s.responseMs=std::clamp(get(L"ResponseMs",500),100,750);
+    s.handStrength=std::clamp(get(L"HandStrength",100),25,200);
+    s.handThreshold=std::clamp(get(L"HandThreshold",100),50,300);
+    s.airBrake=get(L"AirBrake",1)==1;
+    s.falloffMs=std::clamp(get(L"FalloffMs",3000),500,3000);
+    ReleaseSRWLockExclusive(&spectatorSettingsLock);
+    return s;
+}
+void spidy::spectator::saveAutomaticSettings(RealisticFlipSettings s) {
+    AcquireSRWLockExclusive(&spectatorSettingsLock);
+    const auto path=spectatorSettingsPath();
+    auto put=[&](const wchar_t* key,int value) {
+        const auto text=std::to_wstring(value);
+        WritePrivateProfileStringW(L"AutomaticRotation",key,text.c_str(),path.c_str());
+    };
+    if(!path.empty()) {
+        put(L"Enabled",s.enabled); put(L"ReleaseFlip",s.releaseFlip);
+        put(L"Strength",std::clamp(s.strength,25,100));
+        put(L"Speed",std::clamp(s.speed,90,360));
+        put(L"MinimumSpeed",std::clamp(s.minimumSpeed,3,16));
+        put(L"ResponseMs",std::clamp(s.responseMs,100,750));
+        put(L"HandStrength",std::clamp(s.handStrength,25,200));
+        put(L"HandThreshold",std::clamp(s.handThreshold,50,300));
+        put(L"AirBrake",s.airBrake);
+        put(L"FalloffMs",std::clamp(s.falloffMs,500,3000));
+    }
+    ReleaseSRWLockExclusive(&spectatorSettingsLock);
+}
 struct Config {
     uint32_t magic, version, bytes, pid;
     uint64_t base;
@@ -1186,8 +1301,10 @@ bool activeView(const Descriptor* incoming, Descriptor& out) {
     bool placed = head.viewed;
     if (placed) {
         out = stock;
-        // Keep the stock camera's clip planes and temporal jitter.
-        reinterpret_cast<Lens>(base + 0x187bb00)(&out, stock.nearZ(), stock.farZ(), lens.left, lens.right,
+        // A head-mounted camera needs a much shorter near plane than the
+        // stock third-person camera, or the near side of the chest and arms
+        // disappears as it approaches the eyes.
+        reinterpret_cast<Lens>(base + 0x187bb00)(&out, immersiveNearZ(), stock.farZ(), lens.left, lens.right,
                                                  lens.top, lens.bottom, 0, 0, stock.values[0x428 / 4],
                                                  stock.values[0x42c / 4], false, false);
         reinterpret_cast<SetPose>(base + 0x187ca10)(&out, pose.data());
@@ -1352,6 +1469,7 @@ void enqueueCommand(void* list, uint32_t command, uint64_t order, void* payload)
 // each eye's previous camera equal to its current one, so motion vectors and
 // temporal anti-aliasing saw no camera motion.
 void placeEyes() {
+    readSpectatorSettings();
     Descriptor main{};
     const auto primary = pointer(base + 0x7a34dd0);
     const bool render = read(primary, &main, sizeof(main)) && native_view::valid(main) && !retiring();
@@ -1377,7 +1495,7 @@ void placeEyes() {
     latchedImmersive = render && enabled && controlled && desired.enabled == 1;
     // The game's view is on the head and both eyes render: it need not.
     restGameView(primary, latchedImmersive && (config.createViews & 32) && live.load() == 2 &&
-                              !native_gpu::screenRequested());
+                              !native_gpu::screenRequested() && !spectatorEnabled.load());
     // The HUD's second movie goes on its panel while the eyes are shown.
     // On the game screen in stereo only in a frame whose panel went onto
     // that screen (placeScreenHud, earlier in the frame): without the panel
@@ -1444,7 +1562,7 @@ void placeEyes() {
             pose[14] += placed.offset.z;
             auto aligned = main;
             reinterpret_cast<Lens>(base + 0x187bb00)(
-                &aligned, main.nearZ(), main.farZ(), lens.left, lens.right, lens.top, lens.bottom,
+                &aligned, immersiveNearZ(), main.farZ(), lens.left, lens.right, lens.top, lens.bottom,
                 0, 0, main.values[0x428 / 4], main.values[0x42c / 4], false, false);
             reinterpret_cast<SetPose>(base + 0x187ca10)(&aligned, pose.data());
             if (native_view::valid(aligned)) {
@@ -1506,14 +1624,36 @@ void placeEyes() {
             const float aspect = static_cast<float>(config.width) / config.height;
             const auto& fov = desired.eyes[index].fov;
             const auto jitter = eyeJitter();
+            const float nearZ = controlled && desired.enabled == 1 ? immersiveNearZ() : main.nearZ();
             reinterpret_cast<Lens>(base + 0x187bb00)(
-                &descriptor, main.nearZ(), main.farZ(), controlled ? std::tan(fov[0]) : -aspect,
+                &descriptor, nearZ, main.farZ(), controlled ? std::tan(fov[0]) : -aspect,
                 controlled ? std::tan(fov[1]) : aspect, controlled ? -std::tan(fov[3]) : -1,
                 controlled ? -std::tan(fov[2]) : 1, 0, 0, jitter[0], jitter[1], false, false);
             reinterpret_cast<SetPose>(base + 0x187ca10)(&descriptor, pose.data());
             reinterpret_cast<Submit>(base + 0x1899ab0)(eye, &descriptor);
             matchDistances(eye, descriptor, index);
         }
+    // The eyes and their covering shadow lens have already been submitted.
+    // Render the normal game window from an independent recording projection.
+    // Keep menus/cutscenes on the stock path, including headset screen capture.
+    if (spectatorEnabled.load() && latchedImmersive && live.load() == 2 &&
+        !native_gpu::screenRequested()) {
+        Mat4 pose{};
+        native_eyes::Bounds headLens{};
+        if (native_eyes::headView(desired,pose,headLens)) {
+            pose[12] += placed.offset.x; pose[13] += placed.offset.y; pose[14] += placed.offset.z;
+            const float windowAspect = flatAspect.load();
+            const float aspect = std::isfinite(windowAspect) && windowAspect > .2f && windowAspect < 6 ? windowAspect : 16.f/9;
+            const float halfWidth = std::tan(static_cast<float>(spectatorFov.load()) * 3.14159265359f/360);
+            const float halfHeight = halfWidth/aspect;
+            auto desktop = main;
+            reinterpret_cast<Lens>(base + 0x187bb00)(
+                &desktop,immersiveNearZ(),main.farZ(),-halfWidth,halfWidth,-halfHeight,halfHeight,
+                0,0,main.values[0x428/4],main.values[0x42c/4],false,false);
+            reinterpret_cast<SetPose>(base + 0x187ca10)(&desktop,pose.data());
+            if (native_view::valid(desktop)) originalSubmit(reinterpret_cast<void*>(primary),&desktop);
+        }
+    }
 }
 // A KeyLightContext's cascades: +d and +f count them, +150 holds one each
 // 0x3e0 bytes, with its box's half sizes at +170 and its transform at +198.
@@ -2154,8 +2294,10 @@ extern "C" __declspec(dllexport) DWORD WINAPI SpidyStop(void*) {
     return result;
 }
 BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID) {
-    if (reason == DLL_PROCESS_ATTACH)
+    if (reason == DLL_PROCESS_ATTACH) {
+        spectatorModule = instance;
         DisableThreadLibraryCalls(instance);
+    }
     return TRUE;
 }
 // Diagnostic: 1 places the eyes in view maintenance, as before October 5; 0

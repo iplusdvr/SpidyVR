@@ -493,23 +493,23 @@ void App::header() {
     const ImVec2 center(at.x + S(24 + 27), at.y + height * 0.5f);
     badge(draw, center, S(27));
     const float x = center.x + S(27 + 16);
-    draw->AddText(fonts_.title, S(34), ImVec2(x, at.y + S(13)), col(kText), "SPIDY");
-    const float titleWidth = measure(fonts_.title, S(34), "SPIDY").x;
+    draw->AddText(fonts_.title, S(34), ImVec2(x, at.y + S(13)), col(kText), "IPLUSD");
+    const float titleWidth = measure(fonts_.title, S(34), "IPLUSD").x;
     const ImVec2 tag(x + titleWidth + S(10), at.y + S(26));
     const ImVec2 tagSize = measure(fonts_.bold, S(11.5f), "VR");
     draw->AddRect(tag, ImVec2(tag.x + tagSize.x + S(14), tag.y + S(20)), col(kRed), S(6), 0, S(1.5f));
     draw->AddText(fonts_.bold, S(11.5f), ImVec2(tag.x + S(7), tag.y + (S(20) - tagSize.y) * 0.5f), col({255, 120, 120}), "VR");
-    const char* subtitle = "VR mod for Marvel's Spider-Man Remastered";
+    const char* subtitle = "SpidyVR fork";
     const float lineY = at.y + S(58);
     draw->AddText(fonts_.body, S(14.5f), ImVec2(x, lineY), col(kMuted), subtitle);
     float bylineX = x + measure(fonts_.body, S(14.5f), subtitle).x;
     draw->AddText(fonts_.body, S(14.5f), ImVec2(bylineX, lineY), col(kFaint), "   \xC2\xB7   by ");
     bylineX += measure(fonts_.body, S(14.5f), "   \xC2\xB7   by ").x;
-    draw->AddText(fonts_.semibold, S(14.5f), ImVec2(bylineX, lineY), col(kText), kAuthor);
+    draw->AddText(fonts_.semibold, S(14.5f), ImVec2(bylineX, lineY), col(kText), "iplusd");
 
     const ImVec2 buttonSize(S(196), S(40));
     ImGui::SetCursorScreenPos(ImVec2(at.x + width - S(24) - buttonSize.x, at.y + (height - buttonSize.y) * 0.5f));
-    if (pillButton("##kofi", kHeart, "Support on Ko-fi", col(kKofi), col(kKofiHover), col(kWhite), buttonSize))
+    if (pillButton("##kofi", kHeart, "Support SpidyVR", col(kKofi), col(kKofiHover), col(kWhite), buttonSize))
         openUrl(kKofiUrl);
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
         ImGui::SetTooltip("Spidy is free. If you enjoy it, a tip helps pay for its development.");
@@ -1534,13 +1534,16 @@ void App::about(ImVec2 origin, ImVec2 size) {
         auto* draw = ImGui::GetWindowDrawList();
         const ImVec2 at = ImGui::GetCursorScreenPos();
         badge(draw, ImVec2(at.x + S(34), at.y + S(36)), S(32));
-        draw->AddText(fonts_.title, S(30), ImVec2(at.x + S(84), at.y + S(6)), col(kText), "Spidy");
-        draw->AddText(fonts_.body, S(15), ImVec2(at.x + S(84), at.y + S(46)), col(kMuted), "Created by");
-        draw->AddText(fonts_.semibold, S(15), ImVec2(at.x + S(84) + measure(fonts_.body, S(15), "Created by ").x, at.y + S(46)),
+        draw->AddText(fonts_.title, S(30), ImVec2(at.x + S(84), at.y + S(6)), col(kText), "iplusd VR");
+        draw->AddText(fonts_.body, S(15), ImVec2(at.x + S(84), at.y + S(46)), col(kMuted), "SpidyVR by");
+        draw->AddText(fonts_.semibold, S(15), ImVec2(at.x + S(84) + measure(fonts_.body, S(15), "SpidyVR by ").x, at.y + S(46)),
                       col(kText), kAuthor);
         ImGui::Dummy(ImVec2(0, S(86)));
         ImGui::PushStyleColor(ImGuiCol_Text, vec({200, 205, 216}));
         ImGui::PushTextWrapPos(0);
+        ImGui::TextUnformatted("Fork and custom features: iplusd (github.com/iplusdvr). Based on SpidyVR. "
+                               "Momentum rotation was inspired by Blaze's Spider-Man mod for Blade & Sorcery.");
+        ImGui::Dummy(ImVec2(0, S(8)));
         ImGui::TextUnformatted("Spidy puts you inside Marvel's Spider-Man Remastered: your head is the camera, each hand "
                                "shoots its own web, and you swing, zip and throw with your own arms.");
         ImGui::Dummy(ImVec2(0, S(8)));

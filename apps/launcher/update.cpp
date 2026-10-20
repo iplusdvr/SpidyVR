@@ -14,7 +14,7 @@ namespace text = spidy::launcher;
 namespace launcher {
 namespace {
 
-constexpr wchar_t kLatestUrl[] = L"https://api.github.com/repos/IlyaMez/SpidyVR/releases/latest";
+constexpr wchar_t kLatestUrl[] = L"https://api.github.com/repos/iplusdvr/SpidyVR/releases/latest";
 // Where an update works in Spidy's folder: the download, the new files, and the old files they replaced
 // (the running launcher among them). The next start clears it.
 constexpr wchar_t kWorkFolder[] = L".spidy-update";

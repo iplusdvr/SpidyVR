@@ -9704,7 +9704,7 @@ int main() {
               "NaN assist accepted");
         check(!bad([](ShooterConfig&) {}), "defaults rejected");
     });
-    test("VR settings tab: six sections, every setting once, a list's choices one per step", [] {
+    test("VR settings tab: seven sections, every setting once, a list's choices one per step", [] {
         using namespace vr_settings;
         const auto& all = rows();
         unsigned seen = 0, headings = 0;
@@ -9727,7 +9727,7 @@ int main() {
         // The sections (the player, October 19: "sort the options in spidy vr
         // settings ingame into nice sections"), each with a setting in the tab.
         const std::pair<size_t, const char*> sections[] = {{0, "WEBS"},     {5, "SWINGING"}, {8, "COMFORT"},
-                                                           {12, "DISPLAY"}, {17, "BODY"},    {19, "EXPERIMENTAL"}};
+                                                           {12, "DISPLAY"}, {19, "BODY"},    {21, "EXPERIMENTAL"}, {24,"AUTOMATIC ROTATION"}};
         check(headings == std::size(sections), "the sections: webs, swinging, comfort, display, body, experimental");
         for (const auto& [at, title] : sections) {
             check(all[at].item == Item::none && std::strcmp(all[at].title, title) == 0, "a section out of place");
@@ -9736,10 +9736,10 @@ int main() {
                 ++next;
             check(next < all.size() && all[next].item != Item::none, "a section with no setting in the tab");
         }
-        check(all[20].item == Item::flips && all[20].choices.empty() && std::strcmp(all[19].title, "EXPERIMENTAL") == 0,
+        check(all[22].item == Item::flips && all[22].choices.empty() && std::strcmp(all[21].title, "EXPERIMENTAL") == 0,
               "the flips: a switch under EXPERIMENTAL");
-        check(all.size() == 22 && all[21].item == Item::flipSpeed && all[21].choices.size() == std::size(flipSpeeds),
-              "the flip speed under the flips, the last row");
+        check(all.size() == 35 && all[23].item == Item::flipSpeed && all[23].choices.size() == std::size(flipSpeeds),
+              "the flip speed under the flips");
         // The wall view has no row of its own any more: it turned only while
         // Spidy held the player on a wall, so it was never a choice of its own
         // and the launcher's one "Wall running" now carries both (the player,
@@ -9775,8 +9775,8 @@ int main() {
         check(all[6].item == Item::swingSpeed && all[7].item == Item::weight, "SWINGING: the swing speed, the weight");
         check(all[9].item == Item::snapTurn && all[10].item == Item::smoothTurn && all[11].item == Item::haptics,
               "COMFORT: snap and smooth turning, the vibration");
-        check(all[18].item == Item::calibrate && all[18].choices.size() == 2 &&
-                  std::strcmp(all[18].choices[1], "ON RESUME") == 0,
+        check(all[20].item == Item::calibrate && all[20].choices.size() == 2 &&
+                  std::strcmp(all[20].choices[1], "ON RESUME") == 0,
               "the body's calibration: NO, or ON RESUME");
         // Every setting has a row but the wall view, which the launcher's one
         // "Wall running" now carries along with who holds you on the wall.
@@ -9793,6 +9793,44 @@ int main() {
                   choicesOf(Item::airWebs) == 0 && choicesOf(Item::aimMarkers) == 0,
               "lists: one choice per step; switches: the game's own ON and OFF");
         check(choicesOf(Item::calibrate) == 2, "the calibration's switch names its two choices");
+    });
+    test("spectator FOV menu covers the full range and resets to 110", [] {
+        using namespace vr_settings;
+        Values v;
+        check(defaultChoice(Item::spectatorFov) == 14, "default FOV is 110");
+        for (int index=0; index<23; ++index) {
+            choose(Item::spectatorFov,index,v);
+            check(v.spectatorFov == 40+index*5 && choice(Item::spectatorFov,v) == index,
+                  "FOV choice must round-trip");
+        }
+        const auto before=v;
+        check(!choose(Item::spectatorFov,-1,v) && !choose(Item::spectatorFov,23,v) && v==before,
+              "FOV rejects out of range choices");
+        v.spectatorFov=-1; check(sanitized(v).spectatorFov==40,"FOV lower bound");
+        v.spectatorFov=1000; check(sanitized(v).spectatorFov==150,"FOV upper bound");
+        check(rows()[17].item == Item::spectatorFov && rows()[17].choices.size()==23,
+              "recording FOV appears under DISPLAY");
+    });
+    test("near clip menu keeps geometry close to the headset", [] {
+        using namespace vr_settings;
+        Values v;
+        check(v.nearClipMm == 20 && defaultChoice(Item::nearClip) == 2,
+              "near clip defaults to two centimetres");
+        constexpr int expected[] = {10, 15, 20, 30, 50, 75, 100};
+        for (int index = 0; index < static_cast<int>(std::size(expected)); ++index) {
+            choose(Item::nearClip, index, v);
+            check(v.nearClipMm == expected[index] && choice(Item::nearClip, v) == index,
+                  "near clip choice must round-trip");
+        }
+        const auto before = v;
+        check(!choose(Item::nearClip, -1, v) && !choose(Item::nearClip, 7, v) && v == before,
+              "near clip rejects out of range choices");
+        v.nearClipMm = 0;
+        check(sanitized(v).nearClipMm == 10, "near clip lower bound");
+        v.nearClipMm = 1000;
+        check(sanitized(v).nearClipMm == 100, "near clip upper bound");
+        check(rows()[18].item == Item::nearClip && rows()[18].choices.size() == std::size(expected),
+              "near clip appears below spectator FOV under DISPLAY");
     });
     test("VR settings choices: switches and lists round-trip, launcher values show the nearest step", [] {
         using namespace vr_settings;
@@ -9985,6 +10023,90 @@ int main() {
         next(true);
         f.hands[1].stickX = 1;
         check(next(true).head[8] > held.head[8] + .01f, "the stick let go and held again did not turn");
+    });
+    test("momentum mode supports manual left-stick rotation and an airborne A brake", [] {
+        GameTrackingRig rig;
+        RealisticFlipSettings settings; settings.enabled=true;
+        rig.automaticFlips(settings); rig.flips(true); rig.flipSpeed(3.14159265f);
+        rig.flight({{},{},true,false});
+        auto f=trackedFrame();
+        flipFrame(rig,f,false,false);
+        flipFrame(rig,f,false,true); // neutral in air arms joystick control
+        f.hands[0].stickY=1;
+        GameMotionFrame m;
+        for(int i=0;i<45;++i)m=flipFrame(rig,f,false,true);
+        check(std::abs(m.flipTilt.x)>.1f,"left stick must rotate with momentum mode on");
+        check(length(m.swing.move)<.001f,"stick rotation must not also steer flight movement");
+        const auto beforeBrake=m.flipTilt;
+        m=flipFrame(rig,f,true,true);
+        check(std::abs(beforeBrake.x*m.flipTilt.x+beforeBrake.y*m.flipTilt.y+
+              beforeBrake.z*m.flipTilt.z+beforeBrake.w*m.flipTilt.w)>.99f,"A recovery must not snap");
+        f.hands[0].stickY=0;
+        for(int i=0;i<240;++i)m=flipFrame(rig,f,false,true);
+        near(length(m.flipTilt.rotate({0,1,0})-Vec3{0,1,0}),0,.001f);
+        const auto stopped=m.flipTilt;
+        for(int i=0;i<40;++i)m=flipFrame(rig,f,false,true);
+        near(std::abs(stopped.x*m.flipTilt.x+stopped.y*m.flipTilt.y+stopped.z*m.flipTilt.z+stopped.w*m.flipTilt.w),1,.0001f);
+        // A held from a ground jump is not an in-air brake press.
+        rig.reset(); rig.flight({{},{},true,false});
+        f=trackedFrame(); flipFrame(rig,f,true,false);
+        flipFrame(rig,f,true,true);
+        f.hands[0].stickY=1;
+        for(int i=0;i<45;++i)m=flipFrame(rig,f,true,true);
+        check(std::abs(m.flipTilt.x)>.1f,"holding ground-jump A must not disable airborne stick rotation");
+        // A stick held through takeoff remains movement until first neutral.
+        rig.reset(); rig.flight({{},{},true,false});
+        f=trackedFrame(); f.hands[0].stickY=1;
+        flipFrame(rig,f,false,false);
+        for(int i=0;i<45;++i)m=flipFrame(rig,f,false,true);
+        check(levelTilt(m.flipTilt),"running-jump stick is not an accidental flip");
+    });
+    test("physical arm gestures generate airborne rotation without a button or tether", [] {
+        GameTrackingRig rig;
+        RealisticFlipSettings settings; settings.enabled=true;
+        rig.automaticFlips(settings);
+        rig.flight({{},{},true,false});
+        auto frame=trackedFrame();
+        flipFrame(rig,frame,false,false);
+        GameMotionFrame moved;
+        for(int i=0;i<12;++i) {
+            for(auto& h:frame.hands) h.grip.position.y+=.035f;
+            moved=flipFrame(rig,frame,false,true);
+        }
+        check(moved.active && std::abs(moved.flipTilt.x)>.001f,
+              "raw upward hand movement must turn the view without A, stick or web");
+        const auto first=moved.flipTilt;
+        for(int i=0;i<60;++i) moved=flipFrame(rig,frame,false,true);
+        check(std::abs(first.x-moved.flipTilt.x)>.05f,"rotation must continue after arms stop");
+        near(moved.headPose.position.x,0,.001f);
+        near(moved.headPose.position.y,1.7f,.001f);
+        near(moved.headPose.position.z,0,.001f);
+    });
+    test("automatic rotation turns eyes and hands about the head without stick input", [] {
+        GameTrackingRig rig;
+        RealisticFlipSettings settings; settings.enabled=true; settings.strength=100;
+        rig.automaticFlips(settings);
+        rig.flight({{0,0,-15},{1,0,0},true,true});
+        auto f=trackedFrame();
+        f.hands[0].stickX=f.hands[0].stickY=0;
+        GameMotionFrame m;
+        for(int i=0;i<60;++i) m=flipFrame(rig,f,false);
+        check(m.active && !levelTilt(m.flipTilt),"automatic rotation needs no A or stick");
+        near(m.headPose.position.x,0,.001f); near(m.headPose.position.y,1.7f,.001f);
+        near(m.headPose.position.z,0,.001f);
+        check(std::abs(m.headPose.orientation.z)>.1f,"head must rotate with the body");
+        const Vec3 hand=m.grips[0].position-m.headPose.position;
+        near(length(hand),length(f.hands[0].grip.position-f.head.position),.001f);
+        check(std::abs(hand.x-(f.hands[0].grip.position.x-f.head.position.x))>.1f,
+              "hands rotate with tracking space");
+        ++f.predictedDisplayTime;
+        rig.update(f,{}, {0,0,-1},false);
+        rig.flight({});
+        m=flipFrame(rig,f,false,false);
+        check(levelTilt(m.flipTilt),"menu and invalid physics reset automatic rotation");
+        rig.reset(); rig.flight({{0,0,-15},{1,0,0},true,true});
+        m=flipFrame(rig,f,false);
+        check(!levelTilt(m.flipTilt),"rig reset preserves automatic setting");
     });
     test("flip: a tap of A in the air is one front flip about the head, and comes out level", [] {
         GameTrackingRig rig;

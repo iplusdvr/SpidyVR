@@ -206,7 +206,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int show) {
     windowClass.hbrBackground = CreateSolidBrush(RGB(13, 15, 20));
     windowClass.lpszClassName = kClass;
     RegisterClassExW(&windowClass);
-    HWND window = CreateWindowExW(0, kClass, L"Spidy VR", WS_OVERLAPPEDWINDOW,
+    HWND window = CreateWindowExW(0, kClass, L"iplusd VR - based on SpidyVR", WS_OVERLAPPEDWINDOW,
                                   info.rcWork.left + (areaWidth - width) / 2, info.rcWork.top + (areaHeight - height) / 2,
                                   width, height, nullptr, nullptr, instance, nullptr);
     // A dark title bar in the window's own colour (Windows 11 takes the colour; 10 only the dark mode).

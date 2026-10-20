@@ -14,7 +14,7 @@
 namespace launcher {
 using spidy::launcher::Release;
 
-inline constexpr const char* kReleasesUrl = "https://github.com/IlyaMez/SpidyVR/releases";
+inline constexpr const char* kReleasesUrl = "https://github.com/iplusdvr/SpidyVR/releases";
 
 enum class UpdateState { idle, checking, current, available, checkFailed, downloading, installing, installed, installFailed };
 

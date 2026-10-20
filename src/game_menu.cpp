@@ -81,7 +81,7 @@ constexpr uintptr_t settingType = 0x3a7d6e8, headingType = 0x3a7d838;
 constexpr uint32_t tabId = 93;
 // The rows' setting numbers: the game's run 0-122.
 constexpr int firstSetting = 0x200;
-constexpr size_t tabBytes = 0x40, itemBytes = 0x88, choiceBytes = 0x50, maxChoices = 9;
+constexpr size_t tabBytes = 0x40, itemBytes = 0x88, choiceBytes = 0x50, maxChoices = 23;
 constexpr size_t rowCount = std::tuple_size_v<std::remove_cvref_t<decltype(vr_settings::rows())>>;
 
 // A Scaleform GFx::Value as the game lays it out: 16 bytes of 0xff, the
@@ -105,6 +105,46 @@ void releaseValue(GfxValue& v) {
 bool pushBack(const GfxValue& array, const GfxValue& v) {
     return reinterpret_cast<bool(__fastcall*)(ObjectInterface*, uint64_t, const GfxValue*)>(
         array.objects->vtable[15])(array.objects, array.data, &v);
+}
+// Keep the existing game tab ids and their order, but put our tab first.
+// GetElement owns a managed reference; release every snapshot after SetElement
+// has retained it. On a failed shift restore the original list with our tab last.
+bool pushFront(const GfxValue& array, const GfxValue& value) {
+    const auto count = reinterpret_cast<uint32_t(__fastcall*)(ObjectInterface*, uint64_t)>(
+        array.objects->vtable[10])(array.objects, array.data);
+    if (count > 64)
+        return pushBack(array, value);
+    GfxValue previous[64]{};
+    uint32_t read = 0;
+    for (; read < count; ++read) {
+        std::memset(previous[read].head, 0xff, sizeof(previous[read].head));
+        if (!reinterpret_cast<bool(__fastcall*)(ObjectInterface*, uint64_t, uint32_t, GfxValue*)>(
+                array.objects->vtable[12])(array.objects, array.data, read, &previous[read]))
+            break;
+    }
+    if (read != count) {
+        for (uint32_t i = 0; i <= read; ++i)
+            releaseValue(previous[i]);
+        return pushBack(array, value);
+    }
+    const bool added = pushBack(array, value);
+    if (added) {
+        const auto set = reinterpret_cast<bool(__fastcall*)(ObjectInterface*, uint64_t, uint32_t, const GfxValue*)>(
+            array.objects->vtable[13]);
+        bool shifted = true;
+        for (uint32_t i = 0; i < count && shifted; ++i)
+            shifted = set(array.objects, array.data, i + 1, &previous[i]);
+        if (shifted)
+            shifted = set(array.objects, array.data, 0, &value);
+        if (!shifted) {
+            for (uint32_t i = 0; i < count; ++i)
+                set(array.objects, array.data, i, &previous[i]);
+            set(array.objects, array.data, count, &value);
+        }
+    }
+    for (uint32_t i = 0; i < count; ++i)
+        releaseValue(previous[i]);
+    return added;
 }
 
 // Every hook, with the bytes its function starts with in the supported game.
@@ -340,7 +380,7 @@ void addTab(GfxValue& tabs) {
         const bool made =
             reinterpret_cast<bool(__fastcall*)(GfxValue*, void*, const void*)>(imageBase + buildTab)(&value, movie, tab);
         buildingTab = false;
-        if (made && pushBack(tabs, value))
+        if (made && pushFront(tabs, value))
             ++tabsBuilt;
         releaseValue(value);
     } __except (EXCEPTION_EXECUTE_HANDLER) {
