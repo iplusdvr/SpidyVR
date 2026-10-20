@@ -2,6 +2,12 @@
 
 **A complete Windows package by [iplusd](https://github.com/iplusdvr), based on [SpidyVR](https://github.com/IlyaMez/SpidyVR) by Ilya Mezerowsky.**
 
+## iplusd's additions
+
+1. **iplusd's SpidyVR FOV Slider** — independent 40–150° horizontal desktop/recording FOV, persisted between sessions. Headset optics keep their own projection.
+2. **iplusd's SpidyVR Near Clip Fix** — adjustable 1–10 cm VR clipping distance so the chest and nearby arms stay visible.
+3. **iplusd's SpidyVR Realistic Swinging** — web motion and arm gestures drive continuous momentum rotation, including full turns, manual left-stick steering and an airborne A-button brake that smoothly returns upright.
+
 [Download the player package](https://github.com/iplusdvr/SpidyVR/releases/latest) · [Report a fork issue](https://github.com/iplusdvr/SpidyVR/issues) · [Custom changes](docs/CUSTOM_CHANGES.md)
 
 ## Install
@@ -13,15 +19,12 @@
 
 Requires your own supported copy of Marvel's Spider-Man Remastered, a PC VR headset and an OpenXR runtime. Keep the game window in front; the game may pause when another window has focus. See the [SpidyVR players' guide](docs/PLAYERS.md) for base controls and troubleshooting.
 
-## Custom features
+## Realistic Swinging controls
 
-- **Spectator FOV:** independent horizontal desktop/recording FOV, 40–150°, persisted between sessions. Headset optics keep their own projection.
-- **Near clip:** adjustable 1–10 cm VR clipping distance so the chest and nearby arms stay visible.
-- **Momentum rotation:** arm gestures and web motion contribute to continuous rotation, including full turns, without a fixed animation or a preset flip count.
 - **Tuning:** rotation strength, speed cap, flight threshold, swing momentum, response, hand momentum, drag and minimum hand speed.
 - **Air rotation brake:** when enabled, an airborne A press clears angular momentum and smoothly returns upright while retaining heading. Ground jumps retain their original behavior.
 - **Manual steering:** the original FLIPS option enables left-stick airborne rotation and can be combined with the custom system.
-- **First settings category:** SPIDY VR is at the top of Settings.
+- **First settings category:** the added FOV, near clip and rotation controls appear first in SPIDY VR; SPIDY VR is the first category in Settings.
 
 Custom momentum rotation defaults OFF; enable REALISTIC FLIPS to use it. SpidyVR provides the renderer, tracked body, controls and underlying web movement solver.
 
