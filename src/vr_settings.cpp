@@ -174,9 +174,23 @@ Values sanitized(Values v) {
     v.screenDepth = std::clamp(v.screenDepth, 0, 3);
     return v;
 }
-const std::array<Row, 35>& rows() {
+const std::array<Row, 34>& rows() {
     // The help fits the game's description column beside the rows.
-    static const std::array<Row, 35> all{{
+    static const std::array<Row, 34> all{{
+        {Item::spectatorFov, "SPECTATOR FOV",
+         "Horizontal field of view of the recording window. Does not change headset FOV.", spectatorChoices},
+        {Item::nearClip, "NEAR CLIP",
+         "Closest distance before geometry is hidden. Lower keeps nearby arms visible.", nearClipChoices},
+        {Item::realisticFlips, "REALISTIC FLIPS", "Momentum rotation from arms and webs. FLIPS also enables left-stick steering.", {}},
+        {Item::automaticStrength, "ROTATION STRENGTH", "How strongly the body follows the web direction. Heading stays free.", automaticStrengthChoices},
+        {Item::automaticSpeed, "MAX ROTATION SPEED", "Maximum automatic turning speed, including release flips.", automaticSpeedChoices},
+        {Item::automaticMinimumSpeed, "MINIMUM FLIGHT SPEED", "Start automatic rotation only above this travel speed.", automaticMinimumChoices},
+        {Item::automaticReleaseFlip, "SWING MOMENTUM", "Carry orbital momentum when the last web is released. No preset flip.", {}},
+        {Item::automaticResponse, "ROTATION RESPONSE", "Longer response gives gentler acceleration and braking.", automaticResponseChoices},
+        {Item::automaticHandStrength, "HAND MOMENTUM", "How much arm movement changes your angular momentum in the air.", automaticHandStrengthChoices},
+        {Item::automaticFalloff, "ANGULAR DRAG", "How quickly rotation slows without more hand or web input.", automaticFalloffChoices},
+        {Item::automaticHandThreshold, "MINIMUM HAND SPEED", "Ignore hand movements slower than this. Faster gestures add momentum.", automaticHandThresholdChoices},
+        {Item::automaticAirBrake, "AIR ROTATION BRAKE", "Press A in the air to stop momentum and smoothly return upright.", {}},
         {Item::none, "WEBS", nullptr, {}},
         {Item::webStyle, "WEB STYLE",
          "Arcade: webs pass lamp posts, signs and cars, and swings stay above the street.", webStyleChoices},
@@ -205,10 +219,6 @@ const std::array<Row, 35>& rows() {
          "Cutscenes and VIEW: GAME SCREEN get depth. Higher brings them nearer. Off: flat.",
          depthChoices},
         {Item::hud, "HUD", "How large the game's HUD shows in front of you. Off: no HUD in VR.", hudChoices},
-        {Item::spectatorFov, "SPECTATOR FOV",
-         "Horizontal field of view of the recording window. Does not change headset FOV.", spectatorChoices},
-        {Item::nearClip, "NEAR CLIP",
-         "Closest distance before geometry is hidden. Lower keeps nearby arms visible.", nearClipChoices},
         {Item::none, "BODY", nullptr, {}},
         {Item::calibrate, "CALIBRATE BODY", "Fit Spider-Man to you: pick ON RESUME, then hold both triggers in a T-pose.",
          calibrateChoices},
@@ -216,17 +226,6 @@ const std::array<Row, 35>& rows() {
         {Item::flips, "FLIPS", "Left-stick flips. With REALISTIC FLIPS: stick steering and A rotation brake.", {}},
         {Item::flipSpeed, "FLIP SPEED", "How fast a flip turns you over, at full tilt of the left stick.",
          flipSpeedChoices},
-        {Item::none, "AUTOMATIC ROTATION", nullptr, {}},
-        {Item::realisticFlips, "REALISTIC FLIPS", "Momentum rotation from arms and webs. FLIPS also enables left-stick steering.", {}},
-        {Item::automaticStrength, "ROTATION STRENGTH", "How strongly the body follows the web direction. Heading stays free.", automaticStrengthChoices},
-        {Item::automaticSpeed, "MAX ROTATION SPEED", "Maximum automatic turning speed, including release flips.", automaticSpeedChoices},
-        {Item::automaticMinimumSpeed, "MINIMUM FLIGHT SPEED", "Start automatic rotation only above this travel speed.", automaticMinimumChoices},
-        {Item::automaticReleaseFlip, "SWING MOMENTUM", "Carry orbital momentum when the last web is released. No preset flip.", {}},
-        {Item::automaticResponse, "ROTATION RESPONSE", "Longer response gives gentler acceleration and braking.", automaticResponseChoices},
-        {Item::automaticHandStrength, "HAND MOMENTUM", "How much arm movement changes your angular momentum in the air.", automaticHandStrengthChoices},
-        {Item::automaticFalloff, "ANGULAR DRAG", "How quickly rotation slows without more hand or web input.", automaticFalloffChoices},
-        {Item::automaticHandThreshold, "MINIMUM HAND SPEED", "Ignore hand movements slower than this. Faster gestures add momentum.", automaticHandThresholdChoices},
-        {Item::automaticAirBrake, "AIR ROTATION BRAKE", "Press A in the air to stop momentum and smoothly return upright.", {}},
     }};
     return all;
 }

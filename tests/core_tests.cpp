@@ -9704,7 +9704,7 @@ int main() {
               "NaN assist accepted");
         check(!bad([](ShooterConfig&) {}), "defaults rejected");
     });
-    test("VR settings tab: seven sections, every setting once, a list's choices one per step", [] {
+    test("VR settings tab: six sections, every setting once, a list's choices one per step", [] {
         using namespace vr_settings;
         const auto& all = rows();
         unsigned seen = 0, headings = 0;
@@ -9726,8 +9726,8 @@ int main() {
         }
         // The sections (the player, October 19: "sort the options in spidy vr
         // settings ingame into nice sections"), each with a setting in the tab.
-        const std::pair<size_t, const char*> sections[] = {{0, "WEBS"},     {5, "SWINGING"}, {8, "COMFORT"},
-                                                           {12, "DISPLAY"}, {19, "BODY"},    {21, "EXPERIMENTAL"}, {24,"AUTOMATIC ROTATION"}};
+        const std::pair<size_t, const char*> sections[] = {{12, "WEBS"},     {17, "SWINGING"}, {20, "COMFORT"},
+                                                           {24, "DISPLAY"}, {29, "BODY"},     {31, "EXPERIMENTAL"}};
         check(headings == std::size(sections), "the sections: webs, swinging, comfort, display, body, experimental");
         for (const auto& [at, title] : sections) {
             check(all[at].item == Item::none && std::strcmp(all[at].title, title) == 0, "a section out of place");
@@ -9736,9 +9736,9 @@ int main() {
                 ++next;
             check(next < all.size() && all[next].item != Item::none, "a section with no setting in the tab");
         }
-        check(all[22].item == Item::flips && all[22].choices.empty() && std::strcmp(all[21].title, "EXPERIMENTAL") == 0,
+        check(all[32].item == Item::flips && all[32].choices.empty() && std::strcmp(all[31].title, "EXPERIMENTAL") == 0,
               "the flips: a switch under EXPERIMENTAL");
-        check(all.size() == 35 && all[23].item == Item::flipSpeed && all[23].choices.size() == std::size(flipSpeeds),
+        check(all.size() == 34 && all[33].item == Item::flipSpeed && all[33].choices.size() == std::size(flipSpeeds),
               "the flip speed under the flips");
         // The wall view has no row of its own any more: it turned only while
         // Spidy held the player on a wall, so it was never a choice of its own
@@ -9748,35 +9748,35 @@ int main() {
         // then "also merge the two options").
         for (const auto& row : all)
             check(row.item != Item::standOnWalls, "the wall view still has a row of its own");
-        check(all[14].item == Item::screenSize && all[16].item == Item::hud && all[16].choices.size() == 4 &&
-                  std::strcmp(all[16].choices[0], "OFF") == 0 && std::strcmp(all[16].choices[3], "LARGE") == 0,
+        check(all[26].item == Item::screenSize && all[28].item == Item::hud && all[28].choices.size() == 4 &&
+                  std::strcmp(all[28].choices[0], "OFF") == 0 && std::strcmp(all[28].choices[3], "LARGE") == 0,
               "the HUD after the game screen's rows: OFF, SMALL, MEDIUM, LARGE");
-        check(all[15].item == Item::screenDepth && std::strcmp(all[15].title, "GAME SCREEN 3D") == 0 &&
-                  all[15].choices.size() == 4 && std::strcmp(all[15].choices[0], "OFF") == 0 &&
-                  std::strcmp(all[15].choices[3], "HIGH") == 0,
+        check(all[27].item == Item::screenDepth && std::strcmp(all[27].title, "GAME SCREEN 3D") == 0 &&
+                  all[27].choices.size() == 4 && std::strcmp(all[27].choices[0], "OFF") == 0 &&
+                  std::strcmp(all[27].choices[3], "HIGH") == 0,
               "the game screen's depth under its size: OFF, LOW, MEDIUM, HIGH");
         // Webs are always physical (the user, October 15: "remove non physical web, no need for it").
         for (const auto& row : all)
             check(std::strcmp(row.title, "PHYSICAL WEBS") != 0, "webs can still be made non-physical");
-        check(all[13].item == Item::view && std::strcmp(all[13].title, "VR VIEW") == 0 && all[13].choices.size() == 2 &&
-                  std::strcmp(all[13].choices[0], "VR") == 0 && std::strcmp(all[13].choices[1], "GAME SCREEN") == 0,
+        check(all[25].item == Item::view && std::strcmp(all[25].title, "VR VIEW") == 0 && all[25].choices.size() == 2 &&
+                  std::strcmp(all[25].choices[0], "VR") == 0 && std::strcmp(all[25].choices[1], "GAME SCREEN") == 0,
               "the view above the game screen's rows: VR, or GAME SCREEN");
         // VR VIEW is on the pause menu's first page, beside RESUME, and no other row is.
         for (const auto& row : all)
             check(row.page == (row.item == Item::view), "a row on the wrong page");
-        check(all[1].item == Item::webStyle && std::strcmp(all[1].title, "WEB STYLE") == 0 &&
-                  all[1].choices.size() == 2 && std::strcmp(all[1].choices[0], "REALISTIC") == 0 &&
-                  std::strcmp(all[1].choices[1], "ARCADE") == 0,
+        check(all[13].item == Item::webStyle && std::strcmp(all[13].title, "WEB STYLE") == 0 &&
+                  all[13].choices.size() == 2 && std::strcmp(all[13].choices[0], "REALISTIC") == 0 &&
+                  std::strcmp(all[13].choices[1], "ARCADE") == 0,
               "the web style first under WEBS: REALISTIC, or ARCADE");
-        check(all[2].item == Item::webButton && all[2].choices.size() == 2 &&
-                  std::strcmp(all[2].choices[0], "GRIP") == 0 && std::strcmp(all[2].choices[1], "TRIGGER") == 0,
+        check(all[14].item == Item::webButton && all[14].choices.size() == 2 &&
+                  std::strcmp(all[14].choices[0], "GRIP") == 0 && std::strcmp(all[14].choices[1], "TRIGGER") == 0,
               "the web button under the web style: GRIP, or TRIGGER");
-        check(all[3].item == Item::aimMarkers && all[4].item == Item::airWebs, "the aim markers, then the air webs");
-        check(all[6].item == Item::swingSpeed && all[7].item == Item::weight, "SWINGING: the swing speed, the weight");
-        check(all[9].item == Item::snapTurn && all[10].item == Item::smoothTurn && all[11].item == Item::haptics,
+        check(all[15].item == Item::aimMarkers && all[16].item == Item::airWebs, "the aim markers, then the air webs");
+        check(all[18].item == Item::swingSpeed && all[19].item == Item::weight, "SWINGING: the swing speed, the weight");
+        check(all[21].item == Item::snapTurn && all[22].item == Item::smoothTurn && all[23].item == Item::haptics,
               "COMFORT: snap and smooth turning, the vibration");
-        check(all[20].item == Item::calibrate && all[20].choices.size() == 2 &&
-                  std::strcmp(all[20].choices[1], "ON RESUME") == 0,
+        check(all[30].item == Item::calibrate && all[30].choices.size() == 2 &&
+                  std::strcmp(all[30].choices[1], "ON RESUME") == 0,
               "the body's calibration: NO, or ON RESUME");
         // Every setting has a row but the wall view, which the launcher's one
         // "Wall running" now carries along with who holds you on the wall.
@@ -9808,8 +9808,8 @@ int main() {
               "FOV rejects out of range choices");
         v.spectatorFov=-1; check(sanitized(v).spectatorFov==40,"FOV lower bound");
         v.spectatorFov=1000; check(sanitized(v).spectatorFov==150,"FOV upper bound");
-        check(rows()[17].item == Item::spectatorFov && rows()[17].choices.size()==23,
-              "recording FOV appears under DISPLAY");
+        check(rows()[0].item == Item::spectatorFov && rows()[0].choices.size()==23,
+              "recording FOV appears first");
     });
     test("near clip menu keeps geometry close to the headset", [] {
         using namespace vr_settings;
@@ -9829,8 +9829,8 @@ int main() {
         check(sanitized(v).nearClipMm == 10, "near clip lower bound");
         v.nearClipMm = 1000;
         check(sanitized(v).nearClipMm == 100, "near clip upper bound");
-        check(rows()[18].item == Item::nearClip && rows()[18].choices.size() == std::size(expected),
-              "near clip appears below spectator FOV under DISPLAY");
+        check(rows()[1].item == Item::nearClip && rows()[1].choices.size() == std::size(expected),
+              "near clip appears below spectator FOV");
     });
     test("VR settings choices: switches and lists round-trip, launcher values show the nearest step", [] {
         using namespace vr_settings;
