@@ -4,28 +4,29 @@ This fork adds three VR comfort and movement features to [SpidyVR](https://githu
 
 ## What's added
 
-1. **iplusd's SpidyVR FOV Slider**
+1. **SpidyVR FOV Slider**
 
    Sets the desktop and recording view to a horizontal FOV between 40° and 150°. It does not change the headset's lens projection, and the selected value is saved between sessions.
 
-2. **iplusd's SpidyVR Near Clip Fix**
+2. **Near Clip Fix**
 
    Sets the VR near clipping distance between 1 cm and 10 cm, preventing Spider-Man's chest and nearby parts of his arms from disappearing when they get close to the camera.
 
-3. **iplusd's SpidyVR Realistic Swinging**
+3. **Realistic Swinging**
 
    Adds momentum-based air rotation driven by web movement and physical arm gestures. It supports continuous rotations beyond 360°, left-stick steering, adjustable strength and drag, and an optional airborne A-button brake that smoothly returns you upright.
 
 These controls appear first in the game's **Settings → SPIDY VR** menu, and the SPIDY VR category appears at the top of Settings.
 
-## Using the fork
+## HOW TO USE
 
 Download the complete player ZIP from [Releases](https://github.com/iplusdvr/SpidyVR/releases) when a build is available. GitHub's automatic source-code archives are intended for developers and do not contain a ready-to-run player package.
 
 1. Extract the ZIP to a folder you can write to.
 2. Start **Spidy Launcher.exe** or **Launch Spidy VR.cmd**.
 3. Connect your headset, close the game if it is already running, and select **START VR**.
-4. In the game, open **Settings → SPIDY VR** to adjust the new options. Changes take effect immediately.
+4. In the game, open **Settings → SPIDY VR** to adjust the new options.
+5. Make sure the **Realistic Flips: ON** to use the new swinging system.
 
 This is a complete fork, so a separate SpidyVR installation is not required. Installing an original SpidyVR package over the same folder will replace the fork's changes.
 
