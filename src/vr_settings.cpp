@@ -31,6 +31,8 @@ constexpr int spectatorFovs[] = {40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
 constexpr const char* spectatorChoices[] = {"40", "45", "50", "55", "60", "65", "70", "75", "80", "85", "90", "95", "100", "105", "110", "115", "120", "125", "130", "135", "140", "145", "150"};
 constexpr int nearClips[] = {10, 15, 20, 30, 50, 75, 100};
 constexpr const char* nearClipChoices[] = {"1 CM", "1.5 CM", "2 CM", "3 CM", "5 CM", "7.5 CM", "10 CM"};
+constexpr int smoothingAmounts[] = {25,50,75,100,150,200,250,300,400,500};
+constexpr const char* smoothingChoices[] = {"25 MS","50 MS","75 MS","100 MS","150 MS","200 MS","250 MS","300 MS","400 MS","500 MS"};
 constexpr int automaticResponses[] = {100,200,350,500,750};
 constexpr int automaticHandStrength[] = {25,50,75,100,150,200};
 constexpr int automaticHandThresholds[] = {50,100,150,200,300};
@@ -57,6 +59,7 @@ static_assert(std::size(swingChoices) == std::size(swingSpeeds) && std::size(sna
 // A list setting's steps, or none for a switch.
 std::span<const int> steps(Item item) {
     switch (item) {
+    case Item::spectatorSmoothingAmount: return smoothingAmounts;
     case Item::automaticHandThreshold: return automaticHandThresholds;
     case Item::automaticResponse: return automaticResponses;
     case Item::automaticHandStrength: return automaticHandStrength;
@@ -92,6 +95,7 @@ std::span<const int> steps(Item item) {
 }
 float numberOf(Item item, const Values& v) {
     switch (item) {
+    case Item::spectatorSmoothingAmount: return static_cast<float>(v.spectatorSmoothingMs);
     case Item::automaticHandThreshold: return static_cast<float>(v.automaticHandThreshold);
     case Item::automaticResponse: return static_cast<float>(v.automaticResponse);
     case Item::automaticHandStrength: return static_cast<float>(v.automaticHandStrength);
@@ -129,6 +133,7 @@ float numberOf(Item item, const Values& v) {
 template <class V> auto switchOf(Item item, V& v) -> decltype(&v.aimMarkers) {
     switch (item) {
     case Item::spectatorFovEnabled: return &v.spectatorFovEnabled;
+    case Item::spectatorSmoothing: return &v.spectatorSmoothing;
     case Item::automaticAirBrake: return &v.automaticAirBrake;
     case Item::realisticFlips: return &v.realisticFlips;
     case Item::automaticReleaseFlip: return &v.automaticReleaseFlip;
@@ -155,6 +160,7 @@ template <class V> auto switchOf(Item item, V& v) -> decltype(&v.aimMarkers) {
 } // namespace
 
 Values sanitized(Values v) {
+    v.spectatorSmoothingMs = std::clamp(v.spectatorSmoothingMs,25,500);
     v.spectatorFov = std::clamp(v.spectatorFov,40,150);
     v.nearClipMm = std::clamp(v.nearClipMm,10,100);
     v.automaticResponse = std::clamp(v.automaticResponse,100,750);
@@ -175,13 +181,17 @@ Values sanitized(Values v) {
     v.screenDepth = std::clamp(v.screenDepth, 0, 3);
     return v;
 }
-const std::array<Row, 35>& rows() {
+const std::array<Row, 37>& rows() {
     // The help fits the game's description column beside the rows.
-    static const std::array<Row, 35> all{{
+    static const std::array<Row, 37> all{{
         {Item::spectatorFovEnabled, "FOV SLIDER",
          "Enable custom spectator FOV. Off restores the standard recording view.", {}},
         {Item::spectatorFov, "SPECTATOR FOV",
          "Horizontal field of view of the recording window. Does not change headset FOV.", spectatorChoices},
+        {Item::spectatorSmoothing, "FOV SMOOTHING",
+         "Smooth recording camera rotation. No horizon lock. Requires FOV SLIDER on.", {}},
+        {Item::spectatorSmoothingAmount, "SMOOTHING AMOUNT",
+         "Higher values soften head turns more, with more delay. Requires FOV SMOOTHING on.", smoothingChoices},
         {Item::nearClip, "NEAR CLIP",
          "Closest distance before geometry is hidden. Lower keeps nearby arms visible.", nearClipChoices},
         {Item::realisticFlips, "REALISTIC FLIPS", "Momentum rotation from arms and webs. FLIPS also enables left-stick steering.", {}},
@@ -246,6 +256,7 @@ int choice(Item item, const Values& v) {
     return best;
 }
 bool choose(Item item, int index, Values& v) {
+    if (item == Item::spectatorSmoothingAmount && !v.spectatorSmoothing) return false;
     if (item == Item::spectatorFov && !v.spectatorFovEnabled)
         return false;
     if (bool* on = switchOf(item, v)) {
@@ -260,6 +271,7 @@ bool choose(Item item, int index, Values& v) {
         return false;
     const Values before = v;
     switch (item) {
+    case Item::spectatorSmoothingAmount: v.spectatorSmoothingMs=s[index]; break;
     case Item::automaticHandThreshold: v.automaticHandThreshold=s[index]; break;
     case Item::automaticResponse: v.automaticResponse=s[index]; break;
     case Item::automaticHandStrength: v.automaticHandStrength=s[index]; break;

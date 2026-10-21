@@ -1,5 +1,12 @@
 # Spidy changelog
 
+## iplusd fork 0.4.2
+
+- Fixed movement direction drifting away from the view after landing from momentum rotations. Pushing the left stick forward now follows the visible heading without requiring a recenter. Confirmed in game by iplusd.
+- Added optional **FOV SMOOTHING** for the desktop recording view, with a **SMOOTHING AMOUNT** control (25–500 ms). Requires **FOV SLIDER: ON**. Higher values soften camera rotation more, with more delay.
+- Smoothing follows pitch, yaw and roll without locking the horizon or delaying headset tracking. It uses high-resolution timing to preserve smoothing between frames.
+
+
 Every build, newest first, with what changed, why, and what was measured.
 Per-check results are in [VALIDATION.md](VALIDATION.md).
 

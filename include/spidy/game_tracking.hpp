@@ -12,7 +12,7 @@
 namespace spidy {
 // triggerWebs: the controllers' triggers are the hands' web buttons (Input's
 // grip) and their grips the reels (Input's trigger), swapped from the default.
-Input trackedSwingInput(const XrFrame& frame, const Rig& rig, bool triggerWebs = false);
+Input trackedSwingInput(const XrFrame& frame, const Rig& rig, bool triggerWebs = false, bool viewHeading = false);
 native_rays::Command controllerAimRays(const Input&, uint64_t serial);
 struct GameMotionFrame {
     bool active{}, releaseWebs = true;

@@ -1,4 +1,5 @@
 #include "spidy/lab_world.hpp"
+#include "spidy/spectator_smoothing.hpp"
 #include "spidy/native_view.hpp"
 #include "spidy/game_tracking.hpp"
 #include "spidy/native_eye_frame.hpp"
@@ -9709,8 +9710,13 @@ int main() {
         check(rows()[0].item == Item::spectatorFovEnabled && rows()[0].choices.empty(),
               "FOV toggle appears above its amount");
         std::array<Row, 34> all;
-        std::copy(rows().begin() + 1, rows().end(), all.begin());
-        unsigned seen = 1u << static_cast<unsigned>(Item::spectatorFovEnabled), headings = 0;
+        std::copy_if(rows().begin(), rows().end(), all.begin(), [](const Row& r) {
+            return r.item != Item::spectatorFovEnabled && r.item != Item::spectatorSmoothing && r.item != Item::spectatorSmoothingAmount;
+        });
+        uint64_t seen = (uint64_t{1} << static_cast<unsigned>(Item::spectatorFovEnabled)) |
+                        (uint64_t{1} << static_cast<unsigned>(Item::spectatorSmoothing)) |
+                        (uint64_t{1} << static_cast<unsigned>(Item::spectatorSmoothingAmount));
+        unsigned headings = 0;
         for (const auto& row : all) {
             check(row.title && *row.title, "a row without a title");
             for (const char* c = row.title; *c; ++c)
@@ -9720,7 +9726,7 @@ int main() {
                 ++headings;
                 continue;
             }
-            const unsigned bit = 1u << static_cast<unsigned>(row.item);
+            const uint64_t bit = uint64_t{1} << static_cast<unsigned>(row.item);
             check(!(seen & bit), "a setting twice");
             seen |= bit;
             check(row.help && std::strlen(row.help) <= 80, "help missing, or too long for the game's column");
@@ -9783,8 +9789,8 @@ int main() {
               "the body's calibration: NO, or ON RESUME");
         // Every setting has a row but the wall view, which the launcher's one
         // "Wall running" now carries along with who holds you on the wall.
-        constexpr unsigned everySetting = (2u << static_cast<unsigned>(lastItem)) - 2;
-        constexpr unsigned noRowOfItsOwn = 1u << static_cast<unsigned>(Item::standOnWalls);
+        constexpr uint64_t everySetting = (uint64_t{2} << static_cast<unsigned>(lastItem)) - 2;
+        constexpr uint64_t noRowOfItsOwn = uint64_t{1} << static_cast<unsigned>(Item::standOnWalls);
         check(seen == (everySetting & ~noRowOfItsOwn), "a setting missing");
         auto choicesOf = [&](Item item) {
             return std::find_if(all.begin(), all.end(), [&](const Row& r) { return r.item == item; })->choices.size();
@@ -9838,7 +9844,7 @@ int main() {
         check(sanitized(v).nearClipMm == 10, "near clip lower bound");
         v.nearClipMm = 1000;
         check(sanitized(v).nearClipMm == 100, "near clip upper bound");
-        check(rows()[2].item == Item::nearClip && rows()[2].choices.size() == std::size(expected),
+        check(rows()[4].item == Item::nearClip && rows()[4].choices.size() == std::size(expected),
               "near clip appears below spectator FOV");
     });
     test("VR settings choices: switches and lists round-trip, launcher values show the nearest step", [] {
@@ -10069,6 +10075,58 @@ int main() {
         flipFrame(rig,f,false,false);
         for(int i=0;i<45;++i)m=flipFrame(rig,f,false,true);
         check(levelTilt(m.flipTilt),"running-jump stick is not an accidental flip");
+    });
+    test("momentum landing keeps walking aligned with the visible heading without recenter", [] {
+        GameTrackingRig rig;
+        RealisticFlipSettings settings; settings.enabled=true; settings.strength=100;
+        rig.automaticFlips(settings);
+        auto f=trackedFrame();
+        flipFrame(rig,f,false,false);
+        // A diagonal orbital rotation leaves a yaw component after leveling.
+        rig.flight({{8,0,-15},{1,1,1},true,true});
+        for(int i=0;i<180;++i) flipFrame(rig,f,false,true);
+        rig.flight({{},{},true,false});
+        f.hands[0].stickY=1;
+        GameMotionFrame m;
+        for(int i=0;i<400;++i) m=flipFrame(rig,f,false,false);
+        const Vec3 look=m.headPose.orientation.rotate({0,0,-1});
+        const Vec3 forward=normalized(Vec3{look.x,0,look.z});
+        check(length(m.swing.move-forward)<.001f,"forward stick must follow the recovered camera heading");
+        near(dot(m.walkForwardAxis*m.walkForward+m.walkRightAxis*m.walkRight,forward),1,.001f);
+    });
+    test("spectator smoothing follows all rotation axes and preserves current translation", [] {
+        const Mat4 identity{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+        auto rolled=identity;
+        const auto q=Quat::around({0,0,1},1.2f);
+        for(int i=0;i<3;++i) {
+            Vec3 v=q.rotate({identity[i*4],identity[i*4+1],identity[i*4+2]});
+            rolled[i*4]=v.x; rolled[i*4+1]=v.y; rolled[i*4+2]=v.z;
+        }
+        SpectatorSmoothing filter;
+        filter.update(identity,.01f,true);
+        rolled[12]=.5f;
+        auto first=filter.update(rolled,.01f,true);
+        check(first[1]>0 && first[1]<rolled[1],"roll must be smoothed rather than locked upright");
+        const auto duplicate=filter.update(rolled,0,true);
+        near(duplicate[1],first[1],.000001f);
+        SpectatorSmoothing weak,strong;
+        weak.update(identity,.01f,true); strong.update(identity,.01f,true);
+        auto fast=weak.update(rolled,1.f/144,true,25);
+        auto slow=strong.update(rolled,1.f/144,true,500);
+        check(slow[1]>0 && slow[1]<fast[1],"amount controls lag at high refresh rates");
+        vr_settings::Values settings;
+        check(!vr_settings::choose(vr_settings::Item::spectatorSmoothingAmount,9,settings),"off disables amount editing");
+        vr_settings::choose(vr_settings::Item::spectatorSmoothing,1,settings);
+        check(vr_settings::choose(vr_settings::Item::spectatorSmoothingAmount,9,settings) && settings.spectatorSmoothingMs==500,
+              "enabled amount slider reaches 500 ms");
+        near(first[12],.5f);
+        for(int i=0;i<180;++i) first=filter.update(rolled,1.f/90,true);
+        near(first[1],rolled[1],.0001f);
+        check(native_view::validPose(first),"smoothed basis must stay orthonormal");
+        check(filter.update(identity,.01f,false)==identity,"off must return the exact live pose");
+        filter.update(rolled,.01f,true);
+        check(filter.update(identity,.5f,true)==identity,"tracking gaps must reset smoothing");
+        check(defaultChoice(vr_settings::Item::spectatorSmoothing)==0,"smoothing defaults off");
     });
     test("physical arm gestures generate airborne rotation without a button or tether", [] {
         GameTrackingRig rig;

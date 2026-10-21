@@ -200,7 +200,7 @@ Quat FlipMotion::update(const Sample& s) {
     }
     return tilt_;
 }
-Input trackedSwingInput(const XrFrame& f, const Rig& rig, bool triggerWebs) {
+Input trackedSwingInput(const XrFrame& f, const Rig& rig, bool triggerWebs, bool viewHeading) {
     Input input;
     input.focused = f.focused && f.valid && validTrackedPose(f.head);
     if (!input.focused)
@@ -222,7 +222,10 @@ Input trackedSwingInput(const XrFrame& f, const Rig& rig, bool triggerWebs) {
     const auto& move = f.hands[0];
     if (handValid(move) && std::hypot(move.stickX, move.stickY) > .2f) {
         // Ahead of the player as they stand, a flip's tilt aside.
-        const auto forward = horizontal(Quat::yaw(rig.yaw).rotate(f.head.orientation.rotate({0, 0, -1})));
+        // Momentum recovery can retain yaw in tilt. Walking must follow that
+        // visible heading too, otherwise landing requires a manual recenter.
+        const auto rotation = Quat::yaw(rig.yaw) * (viewHeading ? rig.tilt : Quat{});
+        const auto forward = horizontal(rotation.rotate(f.head.orientation.rotate({0, 0, -1})));
         input.move = limited(cross(forward, {0, 1, 0}) * move.stickX + forward * move.stickY, 1);
     }
     return input;
@@ -507,7 +510,7 @@ GameMotionFrame GameTrackingRig::update(const XrFrame& f, Vec3 feet, Vec3 gameFo
     pendingRecenter_ = buttonsChanged_ = false;
     out.predictedDisplayTime = f.predictedDisplayTime;
     out.anchor = feet;
-    out.swing = trackedSwingInput(f, placed, triggerWebs_);
+    out.swing = trackedSwingInput(f, placed, triggerWebs_, autoSettings_.enabled && !turned);
     // The left stick turns the flip: the player does not walk or drift.
     if (flip_.steering() || automaticSteering)
         out.swing.move = {};

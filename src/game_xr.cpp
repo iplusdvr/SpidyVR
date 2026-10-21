@@ -818,6 +818,8 @@ DWORD WINAPI run(void*) {
         };
         values.spectatorFov = spectator::getFov();
         values.spectatorFovEnabled = spectator::getEnabled();
+        values.spectatorSmoothing = spectator::getSmoothing();
+        values.spectatorSmoothingMs = spectator::getSmoothingMs();
         values.nearClipMm = spectator::getNearClipMm();
         values = vr_settings::sanitized(values);
         game_menu::publish(values);
@@ -1578,10 +1580,14 @@ DWORD WINAPI run(void*) {
                     // A change in the SPIDY VR tab takes effect at once.
                     const int previousSpectatorFov = values.spectatorFov;
                     const bool previousFovEnabled = values.spectatorFovEnabled;
+                    const bool previousSmoothing = values.spectatorSmoothing;
+                    const int previousSmoothingMs = values.spectatorSmoothingMs;
                     const int previousNearClipMm = values.nearClipMm;
                     const auto previousAutomatic = automaticSettings();
                     if (game_menu::take(values)) {
                         if (values.spectatorFovEnabled != previousFovEnabled) spectator::setEnabled(values.spectatorFovEnabled);
+                        if (values.spectatorSmoothing != previousSmoothing) spectator::setSmoothing(values.spectatorSmoothing);
+                        if (values.spectatorSmoothingMs != previousSmoothingMs) spectator::setSmoothingMs(values.spectatorSmoothingMs);
                         if (values.spectatorFov != previousSpectatorFov) spectator::setFov(values.spectatorFov);
                         if (values.nearClipMm != previousNearClipMm) spectator::setNearClipMm(values.nearClipMm);
                         if (!(previousAutomatic == automaticSettings())) spectator::saveAutomaticSettings(automaticSettings());
@@ -1590,6 +1596,8 @@ DWORD WINAPI run(void*) {
                     }
                     values.spectatorFov = spectator::getFov();
                     values.spectatorFovEnabled = spectator::getEnabled();
+                    values.spectatorSmoothing = spectator::getSmoothing();
+                    values.spectatorSmoothingMs = spectator::getSmoothingMs();
                     values.nearClipMm = spectator::getNearClipMm();
                     game_menu::publish(values);
                     const uint32_t gate =

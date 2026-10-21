@@ -10,6 +10,7 @@
 #include "spidy/native_view.hpp"
 #include "spidy/native_webs.hpp"
 #include "spidy/spectator.hpp"
+#include "spidy/spectator_smoothing.hpp"
 #include <MinHook.h>
 #include <atomic>
 #include <cstdint>
@@ -21,6 +22,10 @@ using namespace spidy;
 using native_view::Descriptor;
 HINSTANCE spectatorModule{};
 std::atomic<bool> spectatorEnabled{true};
+std::atomic<bool> spectatorSmoothEnabled{};
+std::atomic<int> spectatorSmoothMs{150};
+SpectatorSmoothing recordingSmoothing;
+uint64_t recordingTick{};
 std::atomic<int> spectatorFov{110};
 std::atomic<int> nearClipMm{20};
 float immersiveNearZ() {
@@ -54,6 +59,8 @@ void readSpectatorSettings() {
         const auto path = spectatorSettingsPath();
         if (!path.empty()) {
             spectatorEnabled = GetPrivateProfileIntW(L"Spectator",L"Enabled",1,path.c_str()) == 1;
+            spectatorSmoothEnabled = GetPrivateProfileIntW(L"Spectator",L"Smoothing",0,path.c_str()) == 1;
+            spectatorSmoothMs = std::clamp(static_cast<int>(GetPrivateProfileIntW(L"Spectator",L"SmoothingMs",150,path.c_str())),25,500);
             spectatorFov = std::clamp(static_cast<int>(GetPrivateProfileIntW(
                 L"Spectator",L"HorizontalFov",110,path.c_str())),40,150);
             nearClipMm = std::clamp(static_cast<int>(GetPrivateProfileIntW(
@@ -69,6 +76,34 @@ int spidy::spectator::getFov() {
 bool spidy::spectator::getEnabled() {
     readSpectatorSettings();
     return spectatorEnabled.load();
+}
+bool spidy::spectator::getSmoothing() {
+    readSpectatorSettings();
+    return spectatorSmoothEnabled.load();
+}
+int spidy::spectator::getSmoothingMs() {
+    readSpectatorSettings();
+    return spectatorSmoothMs.load();
+}
+void spidy::spectator::setSmoothingMs(int amount) {
+    AcquireSRWLockExclusive(&spectatorSettingsLock);
+    spectatorSmoothMs = std::clamp(amount,25,500);
+    const auto path = spectatorSettingsPath();
+    if (!path.empty()) {
+        const auto text = std::to_wstring(spectatorSmoothMs.load());
+        WritePrivateProfileStringW(L"Spectator",L"SmoothingMs",text.c_str(),path.c_str());
+    }
+    spectatorPoll = GetTickCount64();
+    ReleaseSRWLockExclusive(&spectatorSettingsLock);
+}
+void spidy::spectator::setSmoothing(bool value) {
+    AcquireSRWLockExclusive(&spectatorSettingsLock);
+    spectatorSmoothEnabled = value;
+    const auto path = spectatorSettingsPath();
+    if (!path.empty())
+        WritePrivateProfileStringW(L"Spectator",L"Smoothing",value ? L"1" : L"0",path.c_str());
+    spectatorPoll = GetTickCount64();
+    ReleaseSRWLockExclusive(&spectatorSettingsLock);
 }
 void spidy::spectator::setEnabled(bool value) {
     AcquireSRWLockExclusive(&spectatorSettingsLock);
@@ -1649,12 +1684,29 @@ void placeEyes() {
     // The eyes and their covering shadow lens have already been submitted.
     // Render the normal game window from an independent recording projection.
     // Keep menus/cutscenes on the stock path, including headset screen capture.
+    if (!spectatorEnabled.load() || !latchedImmersive || live.load() != 2 || native_gpu::screenRequested()) {
+        recordingSmoothing.reset();
+        recordingTick = 0;
+    }
     if (spectatorEnabled.load() && latchedImmersive && live.load() == 2 &&
         !native_gpu::screenRequested()) {
         Mat4 pose{};
         native_eyes::Bounds headLens{};
         if (native_eyes::headView(desired,pose,headLens)) {
             pose[12] += placed.offset.x; pose[13] += placed.offset.y; pose[14] += placed.offset.z;
+            if (spectatorSmoothEnabled.load(std::memory_order_relaxed)) {
+                static const double frequency = [] {
+                    LARGE_INTEGER value{}; QueryPerformanceFrequency(&value);
+                    return static_cast<double>(value.QuadPart);
+                }();
+                LARGE_INTEGER tick{}; QueryPerformanceCounter(&tick);
+                const auto now = static_cast<uint64_t>(tick.QuadPart);
+                const float seconds = recordingTick ? static_cast<float>((now-recordingTick)/frequency) : 0.f;
+                recordingTick = now;
+                pose = recordingSmoothing.update(pose,seconds,true,spectatorSmoothMs.load(std::memory_order_relaxed));
+            } else {
+                recordingSmoothing.reset(); recordingTick = 0;
+            }
             const float windowAspect = flatAspect.load();
             const float aspect = std::isfinite(windowAspect) && windowAspect > .2f && windowAspect < 6 ? windowAspect : 16.f/9;
             const float halfWidth = std::tan(static_cast<float>(spectatorFov.load()) * 3.14159265359f/360);

@@ -8,6 +8,8 @@ This fork adds three VR comfort and movement features to [SpidyVR](https://githu
 
    Turn **FOV SLIDER** on, then use **SPECTATOR FOV** directly below it to set the desktop and recording view between 40° and 150°. Turn it off to restore the standard recording view. Your chosen amount is saved, and the headset's view is unchanged.
 
+   **FOV SMOOTHING** softens recording camera rotation without locking the horizon. Enable it and use **SMOOTHING AMOUNT** (25–500 ms) to adjust how much it smooths. Headset tracking stays immediate. Start with 150 ms; higher values add more smoothing and delay.
+
 2. **Near Clip Fix**
 
    Sets the VR near clipping distance between 1 cm and 10 cm, preventing Spider-Man's chest and nearby parts of his arms from disappearing when they get close to the camera.
@@ -17,6 +19,8 @@ This fork adds three VR comfort and movement features to [SpidyVR](https://githu
    Adds momentum-based air rotation driven by web movement and physical arm gestures. It supports continuous rotations beyond 360°, left-stick steering, adjustable strength and drag, and an optional airborne A-button brake that smoothly returns you upright.
 
 These controls appear in the game's **Settings → SPIDY VR** menu.
+
+Version 0.4.2 also fixes movement direction drifting after landing from momentum rotations. See the [release notes](docs/releases/v0.4.2-iplusd.1.md).
 
 ## HOW TO USE
 
