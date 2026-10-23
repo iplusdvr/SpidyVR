@@ -1,9 +1,22 @@
 # Spidy changelog
 
+## iplusd fork 0.4.3
+
+## New in 0.4.3
+
+- **Web Slingshot: ON/OFF.** Stand still, shoot two separate webs at solid surfaces, pull both hands back and hold for vibration. Release both web buttons together to launch. When enabled, web shots no longer trigger automatic jumps from the ground. The existing swing speed limit also limits the launch.
+- **Better Climbing: ON/OFF.** Hold one web with both hands, pull and regrip to climb toward its anchor. Each stroke keeps the progress you made while the other hand holds the web, without adding a yank/zip impulse.
+- Both options are under **Settings → SPIDY VR → SWINGING**, start OFF and are saved between sessions.
+- No web bridges or enemy-binding mechanics are included.
+
+The FOV toggle and slider, adjustable recording smoothing, near clip settings, realistic swinging and landing heading fix from 0.4.2 are retained.
+
+
+
 ## iplusd fork 0.4.2
 
 - Fixed movement direction drifting away from the view after landing from momentum rotations. Pushing the left stick forward now follows the visible heading without requiring a recenter. Confirmed in game by iplusd.
-- Added optional **FOV SMOOTHING** for the desktop recording view, with a **SMOOTHING AMOUNT** control (25–500 ms). Requires **FOV SLIDER: ON**. Higher values soften camera rotation more, with more delay.
+- Added optional **FOV SMOOTHING** for the desktop recording view, with a **SMOOTHING AMOUNT** control (25â€“500 ms). Requires **FOV SLIDER: ON**. Higher values soften camera rotation more, with more delay.
 - Smoothing follows pitch, yaw and roll without locking the horizon or delaying headset tracking. It uses high-resolution timing to preserve smoothing between frames.
 
 
@@ -2129,7 +2142,7 @@ with 2.12", VR would not start.
   starts the game, whether the PC is on Wi-Fi (`netsh wlan show interfaces`
   and `ipconfig`). Those two print in the console's code page. Python under
   the launcher reads text as UTF-8, and one letter outside English in what
-  they printed (the player's `ipconfig` had the byte 0x84, an `ä` in a
+  they printed (the player's `ipconfig` had the byte 0x84, an `Ã¤` in a
   Western console) made the read fail and leave nothing. The next line then stopped the session: `TypeError: expected
   string or bytes-like object, got 'NoneType'`, after the headset was found
   and before the game started.
@@ -2964,8 +2977,8 @@ ledges were not met. Not in the play folder.
 **Preceding build (October 10, first build): a game that runs as administrator
 is named at once, and the launcher offers to start again as administrator.**
 A player's launch (Quest 3 on a cable, Meta Quest Link, a French Windows)
-printed "WARNING: render memory module unavailable ([WinError 5] Accès
-refusé.)" when the game started, said nothing for three minutes, and ended
+printed "WARNING: render memory module unavailable ([WinError 5] AccÃ¨s
+refusÃ©.)" when the game started, said nothing for three minutes, and ended
 with "No loaded player within three minutes. Load a save, then run the
 launcher again." Windows had refused the launcher the game's process. The
 render memory module's 2.5 s of asking ended in the warning; the wait for
@@ -3138,7 +3151,7 @@ and the menu probe's structs v4: install the whole package.
 slow motion.** You asked for the default weight to be 80 and for slow
 motion to last longer.
 - WEIGHT (Settings > SPIDY VR, "Weight" in the launcher) now starts at 80%
-  of real gravity (7.85 m/s² while webs fly you) instead of 60%. RESET ALL
+  of real gravity (7.85 m/sÂ² while webs fly you) instead of 60%. RESET ALL
   goes back to 80%. Until now the launcher saved the weight whether or not
   you had chosen it, so every player's saved settings say 60%: the launcher
   now takes a saved 60% as the old default and starts at 80%. Any other
@@ -3149,7 +3162,7 @@ motion to last longer.
   motion ends.
 Measured: the core tests (208), the launcher's tests, five Python suites and
 the GPU test pass. The tests show the new default as the tab's 80% step,
-falling at 7.848 m/s², and the meter running out at its 12 s. Not run in the
+falling at 7.848 m/sÂ², and the meter running out at its 12 s. Not run in the
 game; the swing's gravity code itself did not change. `probe_menu.py` now
 steps the weight from 80% to 100%, and `probe_weight.py` and
 `probe_slow_motion.py` fly at 80%.
@@ -3373,7 +3386,7 @@ Measured in the game, headless (`tools/probe_slow_motion.py`, reports
 each frame's game time came to 0.298 of its normal share of real time, and
 Havok's step to 0.30 of its base. In a released swing flight the player's
 mover stepped 0.301 game seconds per real second (1.022 at normal speed),
-while the swing's gravity on game time stayed 5.89 m/s² (5.886 asked): the
+while the swing's gravity on game time stayed 5.89 m/sÂ² (5.886 asked): the
 swing slowed with the world. The web grab's step time fell to 0.32 of
 normal. Everything came back to 1.0, every module stopped with code 0, the
 hooked code was restored, and the save files stayed byte-identical.
@@ -3670,12 +3683,12 @@ the launcher, the XR module and README.txt. Details:
 said moving through the air feels too floaty and asked for a weight setting
 in the game's settings. While webs fly you (swinging, and after you let go,
 until you land) Spidy decides how fast you fall, not the game, and since
-October 5 it has pulled at 6 m/s², about 60% of real gravity. That is the
+October 5 it has pulled at 6 m/sÂ², about 60% of real gravity. That is the
 floatiness. The number kept what the October 4 builds applied in practice
 (they were set to 18 but applied a third of it), the swing feel you approved
 then. Settings > SPIDY VR has a new row under SWING SPEED LIMIT, **WEIGHT**:
 40%, 60% (the default: the feel you have now), 80%, 100% (real gravity), 125%,
-150%, 200%, 250% or 300% (about the game's own falls, which pull at 30 m/s²).
+150%, 200%, 250% or 300% (about the game's own falls, which pull at 30 m/sÂ²).
 A change takes hold at once, mid-swing too. Heavier, you drop faster after
 letting go, and swings run faster and shorter. Jumps and falls without a web
 stay the game's own. The launcher's options have a matching "Weight" list,
@@ -3687,7 +3700,7 @@ Checked in the game without a headset, on your save: the SPIDY VR tab showed
 the row, the left stick stepped it from 60% to 80%, and RESET ALL put it back
 (`tools/probe_menu.py`). A new probe (`tools/probe_weight.py`) jumped off your
 perch, swung up on a web, let go, and changed the weight mid-flight as the
-tab does: Spider-Man fell at 5.88 m/s² at 60%, 14.72 at 150% and 29.53 at
+tab does: Spider-Man fell at 5.88 m/sÂ² at 60%, 14.72 at 150% and 29.53 at
 300% (asked: 5.89, 14.72 and 29.43), with every physics step in the air under
 Spidy's control. Your save files were unchanged except `slot0-s.save`, which
 the game saved itself when the probe left the pause menu, before the jump.
@@ -3708,20 +3721,20 @@ a claw with its fingertips bent up out of it, the left hand's fingers bent
 back out and crossing. Two faults. Each finger joint bent toward the palm
 about an axis taken from the bone before it, and that axis turns over once a
 bone has curled past the palm's normal: in a full fist every fingertip bent
-60° backward, and a fist the game had already closed folded its middle
+60Â° backward, and a fist the game had already closed folded its middle
 joints back through themselves. And the solver assumed the rig's rest pose
-holds its palms down; Spider-Man's face 30° from down, toward the thumb
+holds its palms down; Spider-Man's face 30Â° from down, toward the thumb
 (measured from his knuckles, and the game's own finger bends agree), so his
 fingers closed diagonally across the palm into each other, and each hand sat
-rolled 30° on its controller. Now the palm comes from the knuckles, and each
-finger joint turns about its finger's own hinge to a set bend (83°, 95° and
-63°, part of the way for a hand closed part of the way); the thumb bends at
+rolled 30Â° on its controller. Now the palm comes from the knuckles, and each
+finger joint turns about its finger's own hinge to a set bend (83Â°, 95Â° and
+63Â°, part of the way for a hand closed part of the way); the thumb bends at
 its two joints in one plane and swings its tip onto the index and middle
 fingers. Spider-Man's own hands in the solver, before and after: the palm
-29.9° off the controller's, now 0.0°; a full fist's knuckle, middle and tip
-joints 82°, 96° and −60° on every finger, now 83°, 95° and 63°; no joint
+29.9Â° off the controller's, now 0.0Â°; a full fist's knuckle, middle and tip
+joints 82Â°, 96Â° and âˆ’60Â° on every finger, now 83Â°, 95Â° and 63Â°; no joint
 bends back any more, from straight fingers, fingers bent back or the game's
-own fists. Your hands now sit 30° differently in your grip: tell me how that
+own fists. Your hands now sit 30Â° differently in your grip: tell me how that
 feels. 171 core checks (3 new, with his real hands) and 86 Python checks
 pass. Not yet run in the game or the headset (`tools/probe_game_body.py
 --fists 0.5,1` reports each hand's palm and joints), and not in your play
@@ -3784,9 +3797,9 @@ the feet. Hands, webs and the body go with the head; crawling and the jump off
 are the game's, as before (`GameTrackingRig`, `wallClearance`).
 Measured in the game without a headset (`tools/probe_wall_crawl.py`, your
 save, a wall 6 m from the player, reeled into on a web): the game took the
-player at the wall and turned him from upright to 90° in 0.25 s, feet 0.00 m
+player at the wall and turned him from upright to 90Â° in 0.25 s, feet 0.00 m
 from the wall's surface; eyes placed as before were 0.00 m from it, as now
-0.50 m. On the wall the hero rocks up to 14° about the wall's normal and
+0.50 m. On the wall the hero rocks up to 14Â° about the wall's normal and
 snaps back several times a second, so the stand-off is level (straight down
 under a ceiling) and does not bob with him. He was upright 0.3 s after the
 jump off; Spidy's own flight never tilted him. Session reports carry
@@ -3886,7 +3899,7 @@ menu turns nothing until you let it go. The launcher's options have a
 matching "Smooth turn" list, `Launch Spidy VR.cmd` takes `-SmoothTurn 120`,
 and the next session starts with whatever you left it at in the headset.
 Turning also no longer counts as moving your arms for punches: a fist held
-out while you turn sweeps through the world at up to 2.5 m/s at 240°/s,
+out while you turn sweeps through the world at up to 2.5 m/s at 240Â°/s,
 faster than a punch, and it could have knocked a thug over; snap turns had
 the same flaw for one frame each. Now the punch measure turns with you and
 counts only what your arm does. 162 core checks (new: smooth turning's speed
@@ -3925,7 +3938,7 @@ Spider-Man went down at 46.9 m/s, and the web was gone. With this build he
 went on reeling with the web held, then flew on through a 0.25 s freeze of
 the game, 2 s without input and a 3 s freeze like a pause: every physics step
 in the air under Spidy's control, the vertical speed changing by at most 0.09
-m/s from one step to the next, falling under Spidy's 6 m/s² while gliding.
+m/s from one step to the next, falling under Spidy's 6 m/sÂ² while gliding.
 Your save files were unchanged. 159 core checks (new: a stutter keeps the
 input and a longer loss does not, the webs survive a stutter but not a longer
 break, the first controller sample after a gap is no yank and keeps the web,
@@ -3962,7 +3975,7 @@ the virtual controller's left stick as the Touch controllers do: SPIDY VR
 appeared after KEY MAPPING and showed the session's values (33 m/s as 32 M/S,
 the web shooter off); right on AIM MARKERS switched them off, on SWING SPEED
 LIMIT stepped it to 40 M/S, on YOUR OWN BODY switched it off and X put it back,
-on SNAP TURN stepped it to 45°; Y then A put back Spidy's defaults, the web
+on SNAP TURN stepped it to 45Â°; Y then A put back Spidy's defaults, the web
 shooter on again; each change reached Spidy's values at once; backing out
 resumed play. With Spidy's hooks taken out, Settings showed the game's eight
 tabs only; put back in, SPIDY VR returned. Every hook was restored and your
@@ -4147,7 +4160,7 @@ of your hand, held up, so a turn of the wrist swung it fast, and a throw
 multiplied its speed by 2.2: two of four throws left at the 40 m/s cap. Yanks
 launched props at 17-45 m/s, mostly upward, and four you let go of in flight
 kept rising at 12-13 m/s. Now every web is a rope that only pulls, with at most
-2400 N: 80 m/s² on a 30 kg trash can, less on anything heavier, and one web can
+2400 N: 80 m/sÂ² on a 30 kg trash can, less on anything heavier, and one web can
 drag but not lift anything over 245 kg (two can). A caught prop hangs below
 your hand on a short web, swings when you move and settles when you stop;
 pointing the hand ahead or turning the wrist neither lifts nor swings it. A
@@ -4386,7 +4399,7 @@ steering only every other step. A yank kicked one of them, so the body alternate
 between two velocities (11 m/s apart in a simulated yank) until landing handed
 control back to the game. The solver now starts from where the step in flight
 will leave the body. Because of that bug, gravity and air steering acted at about
-a third of their settings (18 and 12 m/s²; the session measured 5-6 m/s² of
+a third of their settings (18 and 12 m/sÂ²; the session measured 5-6 m/sÂ² of
 gravity), so they are now set to 6 and 4 to keep the swing feel you approved.
 Yanks now apply their full strength. It passed 83 core checks, the GPU test, and
 39 Python checks.

@@ -69,6 +69,16 @@ void readSpectatorSettings() {
     }
     ReleaseSRWLockExclusive(&spectatorSettingsLock);
 }
+bool spidy::spectator::getWebOption(bool climbing) {
+    const auto path = spectatorSettingsPath();
+    return !path.empty() && GetPrivateProfileIntW(L"Webs", climbing ? L"BetterClimbing" : L"Slingshot",
+                                                0, path.c_str()) == 1;
+}
+void spidy::spectator::setWebOption(bool climbing, bool enabled) {
+    const auto path = spectatorSettingsPath();
+    if (!path.empty()) WritePrivateProfileStringW(L"Webs", climbing ? L"BetterClimbing" : L"Slingshot",
+                                                enabled ? L"1" : L"0", path.c_str());
+}
 int spidy::spectator::getFov() {
     readSpectatorSettings();
     return spectatorFov.load();

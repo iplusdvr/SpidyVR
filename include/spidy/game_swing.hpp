@@ -212,7 +212,7 @@ static_assert(sizeof(Config) == 64 && sizeof(Hand) == 52 && sizeof(Command) == 2
 // arcade). Version 6 (settingsBytesV6) ends before it and leaves the webs'
 // style as it is.
 struct Settings {
-    uint32_t magic = 0x53575354, version = 7, bytes = sizeof(Settings), grab = 1;
+    uint32_t magic = 0x53575354, version = 10, bytes = sizeof(Settings), grab = 1;
     float maxSpeed = 32;
     uint32_t airWebs = 1;
     float gravity = 6;
@@ -220,12 +220,25 @@ struct Settings {
     uint32_t physical = 1;
     uint32_t noBlows{};
     uint32_t arcade{};
+    uint32_t handClimb{}; // reserved official v8 slot; this fork does not enable wall hand climbing
+    uint32_t webSlingshot{};
+    uint32_t betterClimbing{};
 };
-constexpr uint32_t settingsBytesV3 = 28, settingsBytesV4 = 32, settingsBytesV5 = 36, settingsBytesV6 = 40;
-static_assert(sizeof(Settings) == 44 && offsetof(Settings, walls) == settingsBytesV3 &&
+constexpr uint32_t settingsBytesV3 = 28, settingsBytesV4 = 32, settingsBytesV5 = 36, settingsBytesV6 = 40,
+                   settingsBytesV7 = 44, settingsBytesV8 = 48, settingsBytesV9 = 52;
+static_assert(sizeof(Settings) == 56 && offsetof(Settings, walls) == settingsBytesV3 &&
               offsetof(Settings, physical) == settingsBytesV4 &&
               offsetof(Settings, noBlows) == settingsBytesV5 &&
-              offsetof(Settings, arcade) == settingsBytesV6);
+              offsetof(Settings, arcade) == settingsBytesV6 &&
+              offsetof(Settings, handClimb) == settingsBytesV7 &&
+              offsetof(Settings, webSlingshot) == settingsBytesV8 &&
+              offsetof(Settings, betterClimbing) == settingsBytesV9);
+// SpidySlingshotSample: charge in [0, 1], zero after cancel or release.
+struct SlingshotData {
+    uint32_t magic = 0x53534c47, version = 1, bytes = sizeof(SlingshotData);
+    float charge{};
+};
+static_assert(sizeof(SlingshotData) == 16);
 // Physical webs (SpidyRopeData): what the ropes did, for the session report.
 struct Ropes {
     uint32_t magic = 0x53575250, version = 3, bytes = sizeof(Ropes), physical{};
@@ -277,6 +290,20 @@ inline Bends::Hand edgesOf(const Web& w) {
 constexpr float motionSpeedLimit = 65;
 // The most gravity a swing takes, m/s^2: every weight the VR settings offer.
 constexpr float maxGravity = 30;
+inline bool validSettings(const Settings& s) {
+    return s.magic == 0x53575354 &&
+        ((s.version == 3 && s.bytes == settingsBytesV3) ||
+         (s.version == 4 && s.bytes == settingsBytesV4) ||
+         (s.version == 5 && s.bytes == settingsBytesV5) ||
+         (s.version == 6 && s.bytes == settingsBytesV6) ||
+         (s.version == 7 && s.bytes == settingsBytesV7) ||
+         (s.version == 8 && s.bytes == settingsBytesV8) ||
+         (s.version == 9 && s.bytes == settingsBytesV9) ||
+         (s.version == 10 && s.bytes == sizeof(Settings))) &&
+        s.grab <= 1 && std::isfinite(s.maxSpeed) && s.maxSpeed > 0 && s.maxSpeed <= motionSpeedLimit &&
+        s.airWebs <= 1 && std::isfinite(s.gravity) && s.gravity >= 0 && s.gravity <= maxGravity &&
+        s.walls <= 4 && s.physical <= 1 && s.noBlows <= 3 && s.arcade <= 1 && s.handClimb <= 1 && s.webSlingshot <= 1 && s.betterClimbing <= 1;
+}
 static_assert(sizeof(WebState) == 28 && sizeof(Data) == 272 && offsetof(Data, wall) == 240);
 // The player is in the air: Spidy's own flight, or the game's jump or fall,
 // where the mover is unsupported and in its airborne mode (collision flags

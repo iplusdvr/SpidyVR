@@ -432,7 +432,7 @@ BridgeCall startSwing{}, submitSwing{}, sampleSwing{}, stopSwing{}, retargetSwin
 // Each web's edges (game_swing::Bends): optional, without it a web round an
 // edge is drawn to that edge.
 BridgeCall sampleBends{};
-BridgeCall startPunch{}, samplePunch{}, stopPunch{}, swingSettings{}, sampleStrike{};
+BridgeCall startPunch{}, samplePunch{}, stopPunch{}, swingSettings{}, sampleStrike{}, sampleSlingshot{};
 // Spider-Sense (game_sense, in the same module as the punches): optional, an
 // older module draws no warnings.
 BridgeCall sampleSense{};
@@ -761,6 +761,7 @@ DWORD WINAPI run(void*) {
         // lines are 3 kB and nothing changes between calls.
         uint64_t promptCallsBefore = ~0ull;
         uint32_t promptRefresh{}, vrButtonsPlayed{};
+        float slingshotPulseSeconds{};
         // A held on the ground charges a leap of the swing's own (the game's
         // Charge Jump is a skill a save may lack), and a trigger pulled with
         // its hand at the temple is the game's R3, its scan. leapOut: the
@@ -816,6 +817,8 @@ DWORD WINAPI run(void*) {
                 values.automaticStrength,values.automaticSpeed,values.automaticMinimumSpeed,
                 values.automaticResponse,values.automaticHandStrength,values.automaticFalloff,values.automaticHandThreshold,values.automaticAirBrake};
         };
+        values.webSlingshot = spectator::getWebOption(false);
+        values.betterClimbing = spectator::getWebOption(true);
         values.spectatorFov = spectator::getFov();
         values.spectatorFovEnabled = spectator::getEnabled();
         values.spectatorSmoothing = spectator::getSmoothing();
@@ -1083,6 +1086,8 @@ DWORD WINAPI run(void*) {
             s.gravity = vr_settings::gravity(values.weight);
             s.walls = !(config.options & 16384);
             s.arcade = values.arcadeWebs;
+            s.webSlingshot = values.webSlingshot;
+            s.betterClimbing = values.betterClimbing;
             sentSwingSettings = s;
             swingSettingsSent = true;
             // A hand-over owns the walls while it lasts; the player's own
@@ -1578,6 +1583,7 @@ DWORD WINAPI run(void*) {
                     game_prompts::setRewriting(false);
                     (void)promptHelp;
                     // A change in the SPIDY VR tab takes effect at once.
+                    const bool previousSlingshot = values.webSlingshot, previousClimbing = values.betterClimbing;
                     const int previousSpectatorFov = values.spectatorFov;
                     const bool previousFovEnabled = values.spectatorFovEnabled;
                     const bool previousSmoothing = values.spectatorSmoothing;
@@ -1585,6 +1591,8 @@ DWORD WINAPI run(void*) {
                     const int previousNearClipMm = values.nearClipMm;
                     const auto previousAutomatic = automaticSettings();
                     if (game_menu::take(values)) {
+                        if (values.webSlingshot != previousSlingshot) spectator::setWebOption(false, values.webSlingshot);
+                        if (values.betterClimbing != previousClimbing) spectator::setWebOption(true, values.betterClimbing);
                         if (values.spectatorFovEnabled != previousFovEnabled) spectator::setEnabled(values.spectatorFovEnabled);
                         if (values.spectatorSmoothing != previousSmoothing) spectator::setSmoothing(values.spectatorSmoothing);
                         if (values.spectatorSmoothingMs != previousSmoothingMs) spectator::setSmoothingMs(values.spectatorSmoothingMs);
@@ -1863,6 +1871,21 @@ DWORD WINAPI run(void*) {
                         }
                         check(submitSwing(&input), "Tracked swing input");
                         check(sampleSwing(&swingState), "Native swing feedback");
+                        game_swing::SlingshotData slingshot;
+                        slingshotPulseSeconds += frame.seconds;
+                        if (values.webSlingshot && input.focused && sampleSlingshot &&
+                            !sampleSlingshot(&slingshot) && slingshot.magic == 0x53534c47 &&
+                            slingshot.version == 1 && slingshot.bytes == sizeof(slingshot) &&
+                            slingshot.charge > 0 && slingshot.charge <= 1) {
+                            if (slingshotPulseSeconds >= .06f) {
+                                for (unsigned i = 0; i < 2; ++i)
+                                    runtime.haptic(i, .15f + .65f * slingshot.charge, .045f);
+                                slingshotPulseSeconds = 0;
+                            }
+                        } else {
+                            slingshotPulseSeconds = .06f;
+                        }
+
                         if (!sampleBends || sampleBends(&swingBends))
                             swingBends = {};
                         // Nothing here changes who holds the player on a wall
@@ -3734,6 +3757,7 @@ extern "C" __declspec(dllexport) DWORD WINAPI SpidyXrStart(void* input) {
     startSwing = reinterpret_cast<BridgeCall>(GetProcAddress(rays, "SpidySwingStart"));
     submitSwing = reinterpret_cast<BridgeCall>(GetProcAddress(rays, "SpidySwingSubmit"));
     sampleSwing = reinterpret_cast<BridgeCall>(GetProcAddress(rays, "SpidySwingSample"));
+    sampleSlingshot = reinterpret_cast<BridgeCall>(GetProcAddress(rays, "SpidySlingshotSample"));
     sampleBends = reinterpret_cast<BridgeCall>(GetProcAddress(rays, "SpidySwingBends"));
     rayResults = reinterpret_cast<const native_rays::Data*>(GetProcAddress(rays, "SpidyRayData"));
     stopSwing = reinterpret_cast<BridgeCall>(GetProcAddress(rays, "SpidySwingStop"));

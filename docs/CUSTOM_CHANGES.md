@@ -1,4 +1,8 @@
-# Custom Spidy 0.4.0 — changes dated 2026-10-20
+## 0.4.3: Web Slingshot and Better Climbing
+
+Two independently saved switches under SWINGING. Slingshot charges from both hands drawing two fixed webs; releasing both launches within the swing speed limit. Better Climbing shortens a shared web on hand-over-hand pulls and keeps the gained rope length. No web bridges or enemy tethers. The previous recording, clipping and rotation changes below remain included.
+
+# Custom Spidy 0.4.0 â€” changes dated 2026-10-20
 
 Fork and custom features: **iplusd** ([iplusdvr on GitHub](https://github.com/iplusdvr)).
 VR foundation: **SpidyVR**, by **Ilya Mezerowsky**.
@@ -9,8 +13,8 @@ Momentum rotation behavior was inspired by **Blaze's Spider-Man mod for Blade & 
 
 Modified from IlyaMez/SpidyVR v0.4.0, commit c747c184dd97acaddf0db47f1a32f30cebe0d974. Original license and copyright notices are retained. Modifications are supplied under GPL-3.0.
 
-- Independent recording-window projection with horizontal FOV 40–150 degrees, persisted and controlled from DISPLAY / SPECTATOR FOV.
-- Adjustable 1–10 cm VR near clipping plane, persisted and controlled from DISPLAY / NEAR CLIP, so nearby body and arm geometry remains visible.
+- Independent recording-window projection with horizontal FOV 40â€“150 degrees, persisted and controlled from DISPLAY / SPECTATOR FOV.
+- Adjustable 1â€“10 cm VR near clipping plane, persisted and controlled from DISPLAY / NEAR CLIP, so nearby body and arm geometry remains visible.
 - Optional desktop FOV panel, with live settings resolved to the installation even when a hash-staged DLL is loaded. Other INI sections are preserved on save.
 - Continuous angular-momentum rotation in the tracking space about the head, shared by view, eyes, hands and body. No automatic turn counter or canned somersault.
 - Smooth tether-up alignment preserves heading, with angular acceleration and speed limits.

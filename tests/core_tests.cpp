@@ -512,6 +512,141 @@ int main() {
             std::cerr << "FAIL " << name << ": " << e.what() << '\n';
         }
     };
+    struct SlingWorld : TwoAnchors {
+        std::optional<RayHit> raycast(Vec3 o, Vec3 d, float distance) const override {
+            return enabled ? TwoAnchors::raycast(o, d, distance) : std::nullopt;
+        }
+        bool exists(uint64_t id) const override {
+            return enabled && TwoAnchors::exists(id);
+        }
+    };
+    struct Sling {
+        SlingWorld world;
+        Swing solver;
+        Input in;
+        Body body{{0, 1, 0}, {}, true};
+        MotionIntent last{};
+        Sling(bool on = true) {
+            world.anchors[0] = {-8, 8, -20};
+            world.anchors[1] = {8, 8, -20};
+            solver.allowSlingshot(on);
+            for (unsigned i = 0; i < 2; ++i) {
+                auto& h = in.hands[i];
+                h.gripRelativeToHead = {i ? .4f : -.4f, 0, -.25f};
+                h.aim.position = body.position + h.gripRelativeToHead;
+                h.aim.orientation = arc({0, 0, -1}, normalized(world.anchors[i] - h.aim.position));
+                h.tracked = true;
+                h.grip = 1;
+            }
+            tick();
+            check(solver.webs()[0].attached && solver.webs()[1].attached, "two shots did not attach");
+            check(!solver.webs()[1].taken, "fixture joined one web instead of firing two");
+        }
+        void tick(float inputDt = .01f) {
+            last = solver.predictNativeStep(.01f, in, world, body, inputDt);
+            check(last.valid, "invalid slingshot prediction");
+        }
+        void draw() {
+            for (auto& h : in.hands) h.gripRelativeToHead.z += .5f;
+            for (int i = 0; i < 140; ++i) tick();
+        }
+        bool fired() const {
+            return std::any_of(solver.events().begin(), solver.events().end(),
+                               [](const Event& e) { return e.kind == EventKind::Slingshot; });
+        }
+        void release() {
+            for (auto& h : in.hands) h.grip = 0;
+            tick();
+        }
+    };
+    test("slingshot draws two fixed webs and launches once, capped, toward their midpoint", [] {
+        Sling s;
+        s.solver.limitSpeed(25);
+        s.draw();
+        check(s.solver.slingshotCharge() > .9f, "held arm draw never charged");
+        check(std::none_of(s.solver.events().begin(), s.solver.events().end(),
+                          [](const Event& e) { return e.kind == EventKind::Zip; }), "draw caused ordinary zip");
+        s.release();
+        check(s.fired() && s.last.velocity.z < -15 && s.last.velocity.y > 0, "no forward launch");
+        check(length(s.last.velocity) <= 25.001f, "launch exceeded the chosen swing limit");
+        near(s.solver.slingshotCharge(), 0);
+        s.tick();
+        check(!s.fired(), "held release repeated the launch");
+    });
+    test("slingshot off, no arm draw, or only one web never charges", [] {
+        Sling off(false);
+        off.draw(); off.release();
+        check(!off.fired(), "default controls launched a slingshot");
+        Sling still;
+        for (int i = 0; i < 200; ++i) still.tick();
+        near(still.solver.slingshotCharge(), 0);
+        still.release(); check(!still.fired(), "waiting without drawing launched");
+        Sling one;
+        one.in.hands[1].grip = 0; one.tick(); one.draw(); one.release();
+        check(!one.fired(), "one hand charged a slingshot");
+    });
+    test("slingshot accepts a brief two-hand release, cancels a staggered one", [] {
+        for (bool quick : {false, true}) {
+            Sling s; s.draw();
+            s.in.hands[0].grip = 0; s.tick();
+            for (int i = 0; i < (quick ? 5 : 25); ++i) s.tick();
+            s.release(); check(s.fired() == quick, "release window incorrect");
+        }
+    });
+    test("slingshot cancels on movement, tracking loss, a snap turn, airborne, gap, off or released webs", [] {
+        for (int mode = 0; mode < 8; ++mode) {
+            Sling s; s.draw();
+            switch (mode) {
+            case 0: s.in.move.x = 1; break;
+            case 1: s.in.hands[0].tracked = false; break;
+            case 2: s.in.trackingYaw = 1; break;
+            case 3: s.body.grounded = false; break;
+            case 4: s.tick(.2f); break;
+            case 5: s.solver.allowSlingshot(false); break;
+            case 6: s.solver.releaseAll(); break;
+            case 7: s.in.jump = true; break;
+            }
+            s.tick(); s.release();
+            check(!s.fired(), "cancelled gesture still launched");
+        }
+    });
+    test("slingshot does not charge duplicate input poses or keep charge after pushing hands forward", [] {
+        Sling s;
+        for (auto& h : s.in.hands) h.gripRelativeToHead.z += .5f;
+        for (int i = 0; i < 150; ++i) s.tick(0);
+        near(s.solver.slingshotCharge(), 0);
+        for (int i = 0; i < 150; ++i) s.tick();
+        check(s.solver.slingshotCharge() > .9f, "new samples never charged");
+        for (auto& h : s.in.hands) h.gripRelativeToHead.z -= .5f;
+        s.tick(); s.release(); check(!s.fired(), "relaxed draw kept its charge");
+    });
+    test("slingshot settings append to the old wire format and default off", [] {
+        game_swing::Settings s;
+        check(s.version == 10 && s.bytes == 56 && !s.webSlingshot, "wrong slingshot defaults");
+        check(offsetof(game_swing::Settings, webSlingshot) == 48, "old settings moved");
+        s.webSlingshot = 1; check(game_swing::validSettings(s), "ON refused");
+        s.webSlingshot = 2; check(!game_swing::validSettings(s), "invalid switch accepted");
+        vr_settings::Values v;
+        check(!v.webSlingshot && vr_settings::choose(vr_settings::Item::webSlingshot, 1, v) && v.webSlingshot,
+              "menu toggle failed");
+    });
+    test("slingshot cannot charge air anchors or launch after an anchor disappears or focus is lost", [] {
+        Sling air;
+        air.world.enabled = false;
+        air.solver.reset(air.body);
+        air.in.hands[0].grip = air.in.hands[1].grip = 0;
+        air.tick();
+        air.in.hands[0].grip = air.in.hands[1].grip = 1;
+        air.tick();
+        check(air.solver.webs()[0].airAnchor && air.solver.webs()[1].airAnchor, "air-anchor fixture missed");
+        air.draw(); air.release(); check(!air.fired(), "open sky charged a slingshot");
+        Sling lost; lost.draw(); lost.world.enabled = false;
+        lost.tick(); lost.release(); check(!lost.fired(), "missing surface still launched");
+        Sling focus; focus.draw(); focus.in.focused = false;
+        const auto stopped = focus.solver.predictNativeStep(.01f, focus.in, focus.world, focus.body);
+        check(!stopped.valid && focus.solver.slingshotCharge() == 0, "focus loss kept the charge");
+        focus.in.focused = true; focus.release(); check(!focus.fired(), "resuming focus launched");
+    });
     test("native view conversion preserves identity and meter scale", [] {
         const Mat4 original{1,0,0,0, 0,-1,0,0, 0,0,-1,0, 10,20,30,1};
         const auto same=native_view::relativePose(original,{});
@@ -867,6 +1002,76 @@ int main() {
         }
     };
     const auto physical=[]{auto c=inert();c.physical=true;return c;};
+    test("better climbing retains hand-over-hand progress without a yank impulse", [physical] {
+        TestWorld world;
+        Swing swing(physical());
+        swing.allowBetterClimbing(true);
+        auto in = aimed(); in.hands[0].trigger = 0;
+        in.hands[1] = {in.hands[0].aim, {0, .3f, 0}, true, 0, 0};
+        Body body{{}, {}, false};
+        auto intent = swing.predictNativeStep(1.f / 90, in, world, body);
+        auto step = [&] {
+            body = {intent.target, intent.velocity, false};
+            intent = swing.predictNativeStep(1.f / 90, in, world, body);
+            check(intent.valid, "climbing prediction failed");
+            for (const auto& e : swing.events())
+                check(e.kind != EventKind::Zip, "climbing became a yank impulse");
+        };
+        step(); in.hands[1].grip = 1; step();
+        check(swing.shared(), "two hands did not share the web");
+        for (int i = 0; i < 30; ++i) { in.hands[1].gripRelativeToHead.y -= .01f; step(); }
+        check(intent.target.y > .5f, "hand pull did not take in the rope");
+        const float before = intent.target.y;
+        in.hands[1].grip = 0; step();
+        for (int i = 0; i < 25; ++i) { intent.velocity = {}; step(); }
+        check(intent.target.y > before - .05f, "the remaining hand lost the gained height");
+        const float retained = swing.webs()[0].length;
+        // Reach forward with the free hand, grip the same strand and pull again.
+        in.hands[1].gripRelativeToHead.y += .4f; step();
+        in.hands[1].grip = 1; step();
+        check(swing.shared(), "free hand could not regrip the strand");
+        for (int i = 0; i < 25; ++i) { in.hands[1].gripRelativeToHead.y -= .01f; step(); }
+        check(std::min(swing.webs()[0].length, swing.webs()[1].length) < retained - .15f,
+              "another hand-over-hand stroke made no progress");
+    });
+    test("better climbing ignores repeated poses and tracking gaps, and can be switched off", [physical] {
+        TestWorld world;
+        Swing swing(physical()); swing.allowBetterClimbing(true);
+        auto in = aimed(); in.hands[0].trigger = 0;
+        in.hands[1] = {in.hands[0].aim, {0, .3f, 0}, true, 0, 0};
+        Body body{{}, {}, false};
+        swing.predictNativeStep(.01f, in, world, body);
+        in.hands[1].grip = 1;
+        swing.predictNativeStep(.01f, in, world, body);
+        check(swing.shared(), "not a shared strand");
+        const auto before = swing.webs()[1].length;
+        in.hands[1].gripRelativeToHead.y -= .3f;
+        for (int i = 0; i < 100; ++i) swing.predictNativeStep(.01f, in, world, body, 0);
+        near(swing.webs()[1].length, before);
+        swing.predictNativeStep(.01f, in, world, body, .2f);
+        near(swing.webs()[1].length, before);
+        swing.allowBetterClimbing(false);
+        const auto lengthOff = swing.webs()[1].length;
+        for (int i = 0; i < 10; ++i) {
+            in.hands[1].gripRelativeToHead.y -= .005f;
+            swing.predictNativeStep(.01f, in, world, body);
+        }
+        near(swing.webs()[1].length, lengthOff);
+        swing.releaseAll();
+        check(!swing.webs()[0].attached && !swing.webs()[1].attached, "release kept a climbing web");
+    });
+    test("better climbing switch saves and extends settings without moving old fields", [] {
+        vr_settings::Values v;
+        check(!v.betterClimbing, "better climbing must default off");
+        check(vr_settings::choose(vr_settings::Item::betterClimbing, 1, v), "ON failed");
+        game_swing::Settings s;
+        check(s.version == 10 && s.bytes == 56 && offsetof(game_swing::Settings, betterClimbing) == 52,
+              "settings moved old fields");
+        s.betterClimbing = 1; check(game_swing::validSettings(s), "ON refused");
+        s.betterClimbing = 2; check(!game_swing::validSettings(s), "invalid switch accepted");
+    });
+
+
     test("a physical web bends round a building's corner and comes off it again", [physical] {
         Corner w;Swing s(physical());const auto in=w.held();
         Body body{{14,20,2},{-10,0,0},false};
@@ -9711,9 +9916,10 @@ int main() {
               "FOV toggle appears above its amount");
         std::array<Row, 34> all;
         std::copy_if(rows().begin(), rows().end(), all.begin(), [](const Row& r) {
-            return r.item != Item::spectatorFovEnabled && r.item != Item::spectatorSmoothing && r.item != Item::spectatorSmoothingAmount;
+            return r.item != Item::webSlingshot && r.item != Item::betterClimbing && r.item != Item::spectatorFovEnabled && r.item != Item::spectatorSmoothing && r.item != Item::spectatorSmoothingAmount;
         });
-        uint64_t seen = (uint64_t{1} << static_cast<unsigned>(Item::spectatorFovEnabled)) |
+        uint64_t seen = (uint64_t{1} << static_cast<unsigned>(Item::webSlingshot)) |
+                        (uint64_t{1} << static_cast<unsigned>(Item::betterClimbing)) | (uint64_t{1} << static_cast<unsigned>(Item::spectatorFovEnabled)) |
                         (uint64_t{1} << static_cast<unsigned>(Item::spectatorSmoothing)) |
                         (uint64_t{1} << static_cast<unsigned>(Item::spectatorSmoothingAmount));
         unsigned headings = 0;

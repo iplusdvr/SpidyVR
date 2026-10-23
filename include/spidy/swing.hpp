@@ -274,6 +274,7 @@ enum class EventKind {
     Unwrap,   // it came off its last one
     Leap,     // a charged leap left the ground; strength: its charge
     Join,     // a hand took hold of the other hand's web
+    Slingshot, // both drawn webs released
     Pass,     // an arcade web went through a thin or loose thing: shot past one, or swung past one
 };
 struct Event {
@@ -301,6 +302,27 @@ class Swing {
     void settleStep(float predictedSeconds, float actualSeconds);
     void reset(Body body = {});
     void releaseAll();
+    // A shared strand keeps the length taken in by hand-over-hand pulling.
+    void allowBetterClimbing(bool on) {
+        betterClimbing_ = on;
+        if (!on)
+            for (auto& hand : hands_)
+                hand.ropeClimbing = false;
+    }
+    // Grounded web shots stay grounded; draw two fixed webs, then release to launch.
+    void allowSlingshot(bool on) {
+        if (slingshotEnabled_ != on) {
+            slingshotEnabled_ = on;
+            clearSlingshot();
+        }
+    }
+    bool slingshotEnabled() const {
+        return slingshotEnabled_;
+    }
+    float slingshotCharge() const {
+        return slingshotCharge_;
+    }
+
     // A new speed limit during play (the VR settings). A body
     // faster than it slows to it in the next step.
     void limitSpeed(float maxSpeed);
@@ -456,10 +478,18 @@ class Swing {
     }
 
   private:
+    void clearSlingshot();
+    void slingshot(float dt, const Input&, const WorldQueries&);
+    bool slingshotEnabled_{}, slingshotPair_{}, slingshotReleasing_{};
+    Vec3 slingshotHands_[2]{}, slingshotEnds_[2]{};
+    uint64_t slingshotSurfaces_[2]{};
+    float slingshotCharge_{}, slingshotHold_{}, slingshotRelease_{}, slingshotYaw_{};
+    bool betterClimbing_{};
     struct HandState {
         // held: grip squeezed, with release hysteresis. A web shoots only on the
         // press that sets it, so a lost web never re-fires while the grip stays held.
         bool held{}, sample{}, zipUsed{}, triggerReleased{}, reeling{};
+        bool ropeClimbing{};
         Vec3 previous{};
         float pullDistance{}, pullTime{}, obstructed{};
         float winch{}; // how fast this hand's rope shortened in the last step

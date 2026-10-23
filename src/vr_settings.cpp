@@ -133,6 +133,8 @@ float numberOf(Item item, const Values& v) {
 template <class V> auto switchOf(Item item, V& v) -> decltype(&v.aimMarkers) {
     switch (item) {
     case Item::spectatorFovEnabled: return &v.spectatorFovEnabled;
+    case Item::webSlingshot: return &v.webSlingshot;
+    case Item::betterClimbing: return &v.betterClimbing;
     case Item::spectatorSmoothing: return &v.spectatorSmoothing;
     case Item::automaticAirBrake: return &v.automaticAirBrake;
     case Item::realisticFlips: return &v.realisticFlips;
@@ -181,9 +183,9 @@ Values sanitized(Values v) {
     v.screenDepth = std::clamp(v.screenDepth, 0, 3);
     return v;
 }
-const std::array<Row, 37>& rows() {
+const std::array<Row, 39>& rows() {
     // The help fits the game's description column beside the rows.
-    static const std::array<Row, 37> all{{
+    static const std::array<Row, 39> all{{
         {Item::spectatorFovEnabled, "FOV SLIDER",
          "Enable custom spectator FOV. Off restores the standard recording view.", {}},
         {Item::spectatorFov, "SPECTATOR FOV",
@@ -216,6 +218,10 @@ const std::array<Row, 37>& rows() {
         {Item::swingSpeed, "SWING SPEED LIMIT", "How fast a swing can carry you.", swingChoices},
         {Item::weight, "WEIGHT", "How heavy you are while swinging and after letting go. 100% is real gravity.",
          weightChoices},
+        {Item::webSlingshot, "WEB SLINGSHOT",
+         "No auto jump. Draw two fixed webs, hold for vibration, release both to launch.", {}},
+        {Item::betterClimbing, "BETTER CLIMBING",
+         "Take one web in both hands, then pull hand over hand to keep climbing it.", {}},
         {Item::none, "COMFORT", nullptr, {}},
         {Item::snapTurn, "SNAP TURN", "How far a flick of the right stick turns you. Off: no snap turning.",
          snapChoices},
